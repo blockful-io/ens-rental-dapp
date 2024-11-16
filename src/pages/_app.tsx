@@ -7,6 +7,7 @@ import { WagmiProvider } from "wagmi";
 import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 
 import { config } from "../wagmi";
+import { SiteHeader } from "../components/navbar";
 
 const client = new QueryClient();
 
@@ -15,6 +16,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     <WagmiProvider config={config}>
       <QueryClientProvider client={client}>
         <RainbowKitProvider>
+          <SiteHeader />
           <Component {...pageProps} />
         </RainbowKitProvider>
       </QueryClientProvider>

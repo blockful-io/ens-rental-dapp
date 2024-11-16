@@ -13,13 +13,10 @@ import {
 import Link from "next/link";
 import { ShoppingBag, Tag, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SiteHeader } from "../components/navbar";
 
 const Home: NextPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-white dark:from-gray-900 dark:to-gray-800">
-      <SiteHeader />
-
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12">
         {/* Welcome Section */}
@@ -68,13 +65,8 @@ const Home: NextPage = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button
-                className="w-full"
-                size="lg"
-                asChild
-                // onClick={(e: unknown) => redirect("/rentals")}
-              >
-                <Link href="/rentals">Find Domains to Rent</Link>
+              <Button className="w-full" size="lg" asChild>
+                <Link href="/browse">Find Domains to Rent</Link>
               </Button>
             </CardFooter>
           </Card>
@@ -111,15 +103,8 @@ const Home: NextPage = () => {
               </div>
             </CardContent>
             <CardFooter>
-              <Button
-                variant="secondary"
-                className="w-full"
-                size="lg"
-                asChild
-                // onClick={(e: unknown) => redirect("/tenant")}
-                // onClick={() => console.log("List Your Domains")}
-              >
-                <Link href="/tenant">List Your Domains</Link>
+              <Button variant="secondary" className="w-full" size="lg" asChild>
+                <Link href="/lend">List Your Domains</Link>
               </Button>
             </CardFooter>
           </Card>
