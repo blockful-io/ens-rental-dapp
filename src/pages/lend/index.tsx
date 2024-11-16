@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -18,50 +18,101 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/router";
-import { getNamesForAddress } from "@ensdomains/ensjs/subgraph";
-import { toast } from "sonner";
-import { useAccount, usePublicClient } from "wagmi";
-import { ClientWithEns } from "@ensdomains/ensjs/dist/types/contracts/consts";
-import { PublicClient } from "viem";
+import { useAccount } from "wagmi";
+import {
+  createWalletClient,
+  custom,
+  labelhash,
+  namehash,
+  parseEther,
+  publicActions,
+} from "viem";
 
+import { config } from "@/src/wagmi";
+
+import {
+  ensRentAddress,
+  baseRegistrarAddress,
+  nameWrapperAddress,
+} from "@/src/wagmi";
+import useDomainsByAddress from "@/hooks/useDomains";
+import ensRentABI from "@/abis/ensrent.json";
+import baseRegistrarABI from "@/abis/baseRegistrar.json";
+import nameWrapperABI from "@/abis/nameWrapper.json";
 export default function Component() {
   const router = useRouter();
   const [domain, setDomain] = useState(router.query.domain as string);
   const [startingPrice, setStartingPrice] = useState<number | null>(null);
   const [duration, setDuration] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [names, setNames] = useState<string[]>([]);
   const { address } = useAccount();
-  const publicClient = usePublicClient() as PublicClient & ClientWithEns;
+  const walletClient = createWalletClient({
+    account: address,
+    transport: custom(window.ethereum),
+    chain: config.chains[0],
+  }).extend(publicActions);
 
-  useEffect(() => {
-    const getNames = async () => {
-      setIsLoading(true);
-      try {
-        if (!address) return;
+  if (!address) {
+    return router.push("/");
+  }
 
-        const result = await getNamesForAddress(publicClient, {
-          address: address,
-        });
-        setNames(result.map((object) => object.name!));
+  const [names, isLoading, error] = useDomainsByAddress(address);
 
-        if (domain && !names.find((name) => name === domain)) {
-          setError("Domain not available");
-        }
-      } catch (error) {
-        toast.error("An error occurred fetching domains");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const listDomain = async (domain: string) => {
+    if (!startingPrice || !duration) {
+      return;
+    }
 
-    getNames();
-  }, [address, publicClient, domain]);
+    const node = namehash(domain);
+    const tokenId = BigInt(labelhash(domain.split(".")[0]));
 
-  const startAuction = (node: string) => {
-    // TODO: lock domain on rental contract
-    return router.push(`/auctions/simple/${node}`);
+    let owner = (await walletClient.readContract({
+      address: baseRegistrarAddress,
+      abi: baseRegistrarABI,
+      functionName: "ownerOf",
+      args: [tokenId],
+    })) as `0x${string}`;
+
+    debugger;
+    if (owner !== nameWrapperAddress) owner = baseRegistrarAddress;
+
+    const approvedForAll = (await walletClient.readContract({
+      address: owner,
+      abi: nameWrapperABI,
+      functionName: "isApprovedForAll",
+      args: [address, ensRentAddress],
+    })) as boolean;
+
+    if (!approvedForAll) {
+      const { request } = await walletClient.simulateContract({
+        address: owner,
+        abi: nameWrapperABI,
+        functionName: "setApprovalForAll",
+        args: [ensRentAddress, true],
+        account: address,
+      });
+      await walletClient.writeContract(request);
+      await walletClient.waitForTransactionReceipt({
+        hash: await walletClient.writeContract(request),
+      });
+    }
+
+    try {
+      const pricePerSecond =
+        parseEther(startingPrice.toString()) / BigInt(duration);
+      const maxEndTimestamp = BigInt(Math.floor(Date.now() / 1000) + duration);
+
+      const { request } = await walletClient.simulateContract({
+        address: ensRentAddress,
+        abi: ensRentABI,
+        functionName: "listDomain",
+        args: [tokenId, pricePerSecond, maxEndTimestamp, node],
+        account: address,
+      });
+      await walletClient.writeContract(request);
+      return router.push(`/auctions/simple/${domain}`);
+    } catch (error) {
+      console.error({ error });
+    }
   };
 
   if (error) {
@@ -72,13 +123,30 @@ export default function Component() {
             <CardTitle className="text-red-500">Error</CardTitle>
           </CardHeader>
           <CardContent>
-            <p>{error}</p>
+            <p>{error.message}</p>
           </CardContent>
           <CardFooter>
             <Button onClick={() => router.push("/")} variant="outline">
               Return Home
             </Button>
           </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Loading...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+            </div>
+          </CardContent>
         </Card>
       </div>
     );
@@ -138,7 +206,7 @@ export default function Component() {
           </CardContent>
           <CardFooter className="flex flex-col items-stretch space-y-4">
             <Button
-              onClick={() => startAuction(domain)}
+              onClick={async () => await listDomain(domain)}
               disabled={!domain || !startingPrice || duration <= 0}
             >
               Enable Rental

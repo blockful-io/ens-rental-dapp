@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -11,6 +11,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -33,108 +34,125 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import useDomainsByAddress from "@/hooks/useDomains";
+import { ClientWithEns } from "@ensdomains/ensjs/dist/types/contracts/consts";
+import { useAccount } from "wagmi";
+import { usePublicClient } from "wagmi";
+import { PublicClient } from "viem";
 
-// Mock data for registered domains
-const registeredDomains = [
-  {
-    id: 1,
-    domain: "crypto.eth",
-    registrationDate: "2024-01-15",
-    expiryDate: "2025-01-15",
-    rentalStatus: "available", // available, rented, listed
-    currentRenter: null,
-    rentPrice: 0.5,
-    isListed: false,
-  },
-  {
-    id: 2,
-    domain: "nft.eth",
-    registrationDate: "2023-12-10",
-    expiryDate: "2024-12-10",
-    rentalStatus: "rented",
-    currentRenter: "0x8765...4321",
-    rentPrice: 0.8,
-    isListed: true,
-  },
-  {
-    id: 3,
-    domain: "defi.eth",
-    registrationDate: "2024-02-01",
-    expiryDate: "2025-02-01",
-    rentalStatus: "listed",
-    currentRenter: null,
-    rentPrice: 1.2,
-    isListed: true,
-  },
-];
+enum RentalStatus {
+  available = "available",
+  rented = "rented",
+  listed = "listed",
+}
+
+type Domain = {
+  id: number;
+  domain: string;
+  registrationDate: string;
+  expiryDate: string;
+  rentalStatus: RentalStatus;
+  currentRenter: string | null;
+  rentPrice: number;
+  isListed: boolean;
+};
 
 export default function RegisteredDomains() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("name");
-  const [filteredStatus, setFilteredStatus] = useState("all");
+  const [filteredStatus, setFilteredStatus] = useState<RentalStatus | "all">(
+    RentalStatus.rented
+  );
   const router = useRouter();
-  const [unlistDomain, setUnlistDomain] = useState<{
-    id: number;
-    domain: string;
-  } | null>(null);
+  const [unlistDomain, setUnlistDomain] = useState<Pick<
+    Domain,
+    "id" | "domain"
+  > | null>(null);
+  const { address } = useAccount();
+  const publicClient = usePublicClient() as PublicClient & ClientWithEns;
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
+  const [availableNames, isLoading, error] = useDomainsByAddress(address);
+  const [filteredDomains, setFilteredDomains] = useState<Domain[]>([]);
 
-  const getTimeUntilExpiry = (expiryDate: string) => {
-    const now = new Date();
-    const expiry = new Date(expiryDate);
-    const daysLeft = Math.ceil(
-      (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+  useEffect(() => {
+    async function getDomains() {
+      const filteredDomains = [
+        ...availableNames.map((name, i) => ({
+          id: i,
+          domain: name,
+          registrationDate: "",
+          expiryDate: "",
+          rentalStatus: RentalStatus.available,
+          currentRenter: null,
+          rentPrice: 0,
+          isListed: false,
+        })),
+      ]
+        .filter(
+          (domain) =>
+            domain.domain.toLowerCase().includes(searchTerm.toLowerCase()) &&
+            (filteredStatus === "all" || domain.rentalStatus === filteredStatus)
+        )
+        .sort((a, b) => {
+          switch (sortBy) {
+            case "name":
+              return a.domain.localeCompare(b.domain);
+            case "expiry":
+              return (
+                new Date(a.expiryDate).getTime() -
+                new Date(b.expiryDate).getTime()
+              );
+            case "price":
+              return a.rentPrice - b.rentPrice;
+            default:
+              return 0;
+          }
+        });
+
+      setFilteredDomains(filteredDomains);
+    }
+
+    getDomains();
+  }, [availableNames, filteredStatus]);
+
+  const handleUnlist = () => unlistDomain && setUnlistDomain(null);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Loading...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
-    return daysLeft;
-  };
+  }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "available":
-        return "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400";
-      case "rented":
-        return "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400";
-      case "listed":
-        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400";
-      default:
-        return "bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400";
-    }
-  };
-
-  const filteredDomains = registeredDomains
-    .filter(
-      (domain) =>
-        domain.domain.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (filteredStatus === "all" || domain.rentalStatus === filteredStatus)
-    )
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "name":
-          return a.domain.localeCompare(b.domain);
-        case "expiry":
-          return (
-            new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime()
-          );
-        case "price":
-          return a.rentPrice - b.rentPrice;
-        default:
-          return 0;
-      }
-    });
-
-  const handleUnlist = () => {
-    if (unlistDomain) {
-      console.log(`Unlisting domain: ${unlistDomain.domain}`);
-      setUnlistDomain(null);
-    }
-  };
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-red-500">Error</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>{error.message}</p>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={() => router.push("/")} variant="outline">
+              Return Home
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
@@ -171,7 +189,9 @@ export default function RegisteredDomains() {
                 </Select>
                 <Select
                   value={filteredStatus}
-                  onValueChange={setFilteredStatus}
+                  onValueChange={(value: string) =>
+                    setFilteredStatus(value as RentalStatus | "all")
+                  }
                 >
                   <SelectTrigger className="w-[180px]">
                     <SelectValue>
@@ -345,3 +365,33 @@ export default function RegisteredDomains() {
     </div>
   );
 }
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "available":
+      return "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400";
+    case "rented":
+      return "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400";
+    case "listed":
+      return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400";
+    default:
+      return "bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400";
+  }
+};
+
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+};
+
+const getTimeUntilExpiry = (expiryDate: string) => {
+  const now = new Date();
+  const expiry = new Date(expiryDate);
+  const daysLeft = Math.ceil(
+    (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  return daysLeft;
+};

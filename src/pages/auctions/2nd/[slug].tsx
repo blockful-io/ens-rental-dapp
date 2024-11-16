@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 import { AlertCircle, ArrowLeft, Clock, TrendingDown } from "lucide-react";
+import { useAccount } from "wagmi";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 // Update mock auction data
 const mockAuction = {
   domain: "awesome.eth",
+  owner: "0x3a872f8FED4421E7d5BE5c98Ab5Ea0e0245169A1",
   startingPrice: 2.0,
   timeLeft: 3600,
   minimumBid: 0.45,
@@ -41,6 +43,8 @@ const mockAuction = {
 export default function AuctionDetails() {
   const [bidAmount, setBidAmount] = useState("");
   const router = useRouter();
+  const { address } = useAccount();
+  const isOwner = address?.toLowerCase() === mockAuction.owner.toLowerCase();
 
   const formatTimeLeft = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
@@ -98,12 +102,12 @@ export default function AuctionDetails() {
                   </div>
                 </div>
               ) : (
-                <div>
+                <div className="text-center">
                   <h2 className="mb-2 text-lg font-medium">
                     Sealed Bid Auction
                   </h2>
                   <Alert>
-                    <AlertCircle className="size-4" />
+                    <AlertCircle className="mx-auto size-4" />
                     <AlertTitle>Private Bidding in Progress</AlertTitle>
                     <AlertDescription>
                       All bids are sealed until the auction ends. The highest
@@ -130,35 +134,48 @@ export default function AuctionDetails() {
               {mockAuction.status === "active" && (
                 <div className="space-y-4">
                   <h2 className="text-lg font-medium">Place Your Bid</h2>
-                  <Alert>
-                    <AlertCircle className="size-4" />
-                    <AlertTitle>
-                      Minimum bid: {mockAuction.minimumBid} ETH
-                    </AlertTitle>
-                    <AlertDescription>
-                      Your bid will be kept private until the auction ends
-                    </AlertDescription>
-                  </Alert>
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Enter bid amount in ETH"
-                      value={bidAmount}
-                      onChange={(e) => setBidAmount(e.target.value)}
-                      step="0.01"
-                      min={mockAuction.minimumBid}
-                    />
-                    <Button
-                      className="whitespace-nowrap"
-                      onClick={handleBid}
-                      disabled={
-                        !bidAmount ||
-                        parseFloat(bidAmount) < mockAuction.minimumBid
-                      }
-                    >
-                      Place Bid
-                    </Button>
-                  </div>
+                  {isOwner ? (
+                    <Alert variant="destructive">
+                      <AlertCircle className="size-4" />
+                      <AlertTitle>Cannot Bid on Own Domain</AlertTitle>
+                      <AlertDescription>
+                        As the owner of this domain, you cannot participate in
+                        the auction.
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <>
+                      <Alert>
+                        <AlertCircle className="size-4" />
+                        <AlertTitle>
+                          Minimum bid: {mockAuction.minimumBid} ETH
+                        </AlertTitle>
+                        <AlertDescription>
+                          Your bid will be kept private until the auction ends
+                        </AlertDescription>
+                      </Alert>
+                      <div className="flex gap-2">
+                        <Input
+                          type="number"
+                          placeholder="Enter bid amount in ETH"
+                          value={bidAmount}
+                          onChange={(e) => setBidAmount(e.target.value)}
+                          step="0.01"
+                          min={mockAuction.minimumBid}
+                        />
+                        <Button
+                          className="whitespace-nowrap"
+                          onClick={handleBid}
+                          disabled={
+                            !bidAmount ||
+                            parseFloat(bidAmount) < mockAuction.minimumBid
+                          }
+                        >
+                          Place Bid
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
