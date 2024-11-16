@@ -33,7 +33,7 @@ const Home: NextPage = () => {
         {/* Options Grid */}
         <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-2">
           {/* Rent a Domain Card */}
-          <Card className="transition-shadow hover:shadow-lg">
+          <Card className="flex flex-col transition-shadow hover:shadow-lg">
             <CardHeader>
               <div className="flex items-center space-x-2">
                 <ShoppingBag className="size-6 text-blue-500 dark:text-blue-400" />
@@ -44,7 +44,7 @@ const Home: NextPage = () => {
                 organization
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1">
               <div className="space-y-2 text-sm dark:text-gray-300">
                 <div className="flex items-center">
                   <span className="mr-2">✓</span>
@@ -72,7 +72,7 @@ const Home: NextPage = () => {
           </Card>
 
           {/* List Your Domains Card */}
-          <Card className="transition-shadow hover:shadow-lg">
+          <Card className="flex flex-col transition-shadow hover:shadow-lg">
             <CardHeader>
               <div className="flex items-center space-x-2">
                 <Tag className="size-6 text-green-500 dark:text-green-400" />
@@ -82,7 +82,7 @@ const Home: NextPage = () => {
                 List your ENS domains for rent and earn passive income
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex-1">
               <div className="space-y-2 text-sm dark:text-gray-300">
                 <div className="flex items-center">
                   <span className="mr-2">✓</span>

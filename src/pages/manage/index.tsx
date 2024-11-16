@@ -25,6 +25,14 @@ import {
 } from "@/components/ui/select";
 import { Search, Timer, Tag } from "lucide-react";
 import { useRouter } from "next/router";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Mock data for registered domains
 const registeredDomains = [
@@ -65,6 +73,10 @@ export default function RegisteredDomains() {
   const [sortBy, setSortBy] = useState("name");
   const [filteredStatus, setFilteredStatus] = useState("all");
   const router = useRouter();
+  const [unlistDomain, setUnlistDomain] = useState<{
+    id: number;
+    domain: string;
+  } | null>(null);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -117,6 +129,13 @@ export default function RegisteredDomains() {
       }
     });
 
+  const handleUnlist = () => {
+    if (unlistDomain) {
+      console.log(`Unlisting domain: ${unlistDomain.domain}`);
+      setUnlistDomain(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
       <div className="container mx-auto py-8 ">
@@ -155,13 +174,50 @@ export default function RegisteredDomains() {
                   onValueChange={setFilteredStatus}
                 >
                   <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by status" />
+                    <SelectValue>
+                      {filteredStatus === "all" ? (
+                        "All Status"
+                      ) : (
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
+                            filteredStatus
+                          )}`}
+                        >
+                          {filteredStatus.charAt(0).toUpperCase() +
+                            filteredStatus.slice(1)}
+                        </span>
+                      )}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Domains</SelectItem>
-                    <SelectItem value="available">Available</SelectItem>
-                    <SelectItem value="rented">Rented</SelectItem>
-                    <SelectItem value="listed">Listed</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="available">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
+                          "available"
+                        )}`}
+                      >
+                        Available
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="rented">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
+                          "rented"
+                        )}`}
+                      >
+                        Rented
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="listed">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
+                          "listed"
+                        )}`}
+                      >
+                        Listed
+                      </span>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -221,6 +277,8 @@ export default function RegisteredDomains() {
                             {domain.rentalStatus === "available" && (
                               <Button
                                 size="sm"
+                                className="w-28"
+                                variant="outline"
                                 onClick={() =>
                                   router.push(`/lend?domain=${domain.domain}`)
                                 }
@@ -229,12 +287,29 @@ export default function RegisteredDomains() {
                               </Button>
                             )}
                             {domain.rentalStatus === "listed" && (
-                              <Button size="sm" variant="outline">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-28"
+                                onClick={() =>
+                                  setUnlistDomain({
+                                    id: domain.id,
+                                    domain: domain.domain,
+                                  })
+                                }
+                              >
                                 Unlist
                               </Button>
                             )}
                             {domain.rentalStatus === "rented" && (
-                              <Button size="sm" variant="secondary">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="w-28"
+                                onClick={() =>
+                                  router.push(`/manage/${domain.domain}`)
+                                }
+                              >
                                 View Details
                               </Button>
                             )}
@@ -249,6 +324,24 @@ export default function RegisteredDomains() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={!!unlistDomain} onOpenChange={() => setUnlistDomain(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Unlist</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to unlist {unlistDomain?.domain}? This will
+              remove it from the rental marketplace.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setUnlistDomain(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUnlist}>Confirm</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

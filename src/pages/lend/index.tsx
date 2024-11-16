@@ -1,5 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Card,
   CardContent,
@@ -11,53 +18,75 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useRouter } from "next/router";
-
-// Mock data for rented domains
-const rentedDomains = [
-  {
-    id: 1,
-    domain: "crypto.eth",
-    renter: "0x1234...5678",
-    price: 0.5,
-    startDate: "2024-03-15",
-    duration: 2592000, // 30 days in seconds
-    remainingTime: 1728000, // 20 days in seconds
-  },
-  {
-    id: 2,
-    domain: "nft.eth",
-    renter: "0x8765...4321",
-    price: 0.8,
-    startDate: "2024-03-10",
-    duration: 5184000, // 60 days in seconds
-    remainingTime: 3456000, // 40 days in seconds
-  },
-  {
-    id: 3,
-    domain: "defi.eth",
-    renter: "0x2468...1357",
-    price: 1.2,
-    startDate: "2024-03-01",
-    duration: 7776000, // 90 days in seconds
-    remainingTime: 4320000, // 50 days in seconds
-  },
-];
+import { getNamesForAddress } from "@ensdomains/ensjs/subgraph";
+import { toast } from "sonner";
+import { useAccount, usePublicClient } from "wagmi";
+import { ClientWithEns } from "@ensdomains/ensjs/dist/types/contracts/consts";
+import { PublicClient } from "viem";
 
 export default function Component() {
   const router = useRouter();
   const [domain, setDomain] = useState(router.query.domain as string);
-  const [floorPrice, setfloorPrice] = useState<number | null>(null);
+  const [startingPrice, setStartingPrice] = useState<number | null>(null);
   const [duration, setDuration] = useState(0);
-  const [rentalEnabled, setRentalEnabled] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [names, setNames] = useState<string[]>([]);
+  const { address } = useAccount();
+  const publicClient = usePublicClient() as PublicClient & ClientWithEns;
+
+  useEffect(() => {
+    const getNames = async () => {
+      setIsLoading(true);
+      try {
+        if (!address) return;
+
+        const result = await getNamesForAddress(publicClient, {
+          address: address,
+        });
+        setNames(result.map((object) => object.name!));
+
+        if (domain && !names.find((name) => name === domain)) {
+          setError("Domain not available");
+        }
+      } catch (error) {
+        toast.error("An error occurred fetching domains");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    getNames();
+  }, [address, publicClient, domain]);
 
   const startAuction = (node: string) => {
     // TODO: lock domain on rental contract
     return router.push(`/auctions/simple/${node}`);
   };
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-red-500">Error</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>{error}</p>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={() => router.push("/")} variant="outline">
+              Return Home
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto min-h-screen flex items-center justify-center py-10">
-      <div className="space-y-12 w-full">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
+      <div className="container mx-auto py-8 max-w-4xl">
         <Card className="mx-auto w-full max-w-md">
           <CardHeader>
             <CardTitle>ENS Domain Rental</CardTitle>
@@ -69,27 +98,31 @@ export default function Component() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="domain">Domain Name</Label>
-                <Input
-                  id="domain"
-                  placeholder="example.eth"
-                  value={domain}
-                  onChange={(e) => setDomain(e.target.value)}
-                  disabled={rentalEnabled}
-                />
+                <Select value={domain} onValueChange={setDomain}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a domain" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {names.map((name) => (
+                      <SelectItem key={name} value={name}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="floorPrice">Floor Price (ETH)</Label>
+                <Label htmlFor="startingPrice">Starting Price (ETH)</Label>
                 <Input
-                  id="floorPrice"
+                  id="startingPrice"
                   type="number"
-                  value={floorPrice ?? ""}
+                  value={startingPrice ?? ""}
                   placeholder="0.01"
-                  onChange={(e) => setfloorPrice(Number(e.target.value))}
-                  disabled={rentalEnabled}
+                  onChange={(e) => setStartingPrice(Number(e.target.value))}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="duration">Rental Duration</Label>
+                <Label htmlFor="duration">Rental Maximum Duration</Label>
                 <Input
                   id="endDate"
                   type="date"
@@ -99,7 +132,6 @@ export default function Component() {
                     const end = new Date(e.target.value).getTime();
                     setDuration(Math.floor((end - start) / 1000));
                   }}
-                  disabled={rentalEnabled}
                 />
               </div>
             </div>
@@ -107,7 +139,7 @@ export default function Component() {
           <CardFooter className="flex flex-col items-stretch space-y-4">
             <Button
               onClick={() => startAuction(domain)}
-              disabled={!domain || !floorPrice || duration <= 0}
+              disabled={!domain || !startingPrice || duration <= 0}
             >
               Enable Rental
             </Button>

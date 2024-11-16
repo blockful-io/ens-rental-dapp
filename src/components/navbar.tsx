@@ -15,13 +15,13 @@ export function SiteHeader() {
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-1">
             <Button variant="ghost" asChild>
-              <Link href="/browse">Browse</Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/manage">Manage</Link>
+              <Link href="/browse">Borrow</Link>
             </Button>
             <Button variant="ghost" asChild>
               <Link href="/lend">Lend</Link>
+            </Button>
+            <Button variant="ghost" asChild>
+              <Link href="/manage">Manage</Link>
             </Button>
           </nav>
           {/* <nav className="flex items-center space-x-1">
