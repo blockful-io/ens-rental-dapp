@@ -39,23 +39,7 @@ import { ClientWithEns } from "@ensdomains/ensjs/dist/types/contracts/consts";
 import { useAccount } from "wagmi";
 import { usePublicClient } from "wagmi";
 import { PublicClient } from "viem";
-
-enum RentalStatus {
-  available = "available",
-  rented = "rented",
-  listed = "listed",
-}
-
-type Domain = {
-  id: number;
-  domain: string;
-  registrationDate: string;
-  expiryDate: string;
-  rentalStatus: RentalStatus;
-  currentRenter: string | null;
-  rentPrice: number;
-  isListed: boolean;
-};
+import { Domain, RentalStatus } from "@/src/types";
 
 export default function RegisteredDomains() {
   const [searchTerm, setSearchTerm] = useState("");

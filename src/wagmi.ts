@@ -17,6 +17,12 @@ if (!process.env.NEXT_PUBLIC_NAMEWRAPPER_ADDRESS) {
 if (!process.env.NEXT_PUBLIC_RPC_URL) {
   throw new Error("NEXT_PUBLIC_RPC_URL is not set");
 }
+if (!process.env.NEXT_PUBLIC_ENS_RENT_GRAPHQL_URL) {
+  throw new Error("NEXT_PUBLIC_ENS_RENT_GRAPHQL_URL is not set");
+}
+if (!process.env.NEXT_PUBLIC_ENS_GRAPHQL_URL) {
+  throw new Error("NEXT_PUBLIC_ENS_GRAPHQL_URL is not set");
+}
 
 export const config = getDefaultConfig({
   appName: 'ENS Rental',
@@ -36,3 +42,6 @@ export const baseRegistrarAddress = process.env
   .NEXT_PUBLIC_BASE_REGISTRAR_ADDRESS as `0x${string}`;
 export const nameWrapperAddress = process.env
   .NEXT_PUBLIC_NAMEWRAPPER_ADDRESS as `0x${string}`;
+
+export const ensGraphQL = process.env.NEXT_PUBLIC_ENS_GRAPHQL_URL
+export const ensRentGraphQL = process.env.NEXT_PUBLIC_ENS_RENT_GRAPHQL_URL

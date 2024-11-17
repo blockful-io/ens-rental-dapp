@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,16 +26,8 @@ import {
 } from "@/components/ui/table";
 import { Search, Clock, TrendingDown, LayoutGrid, List } from "lucide-react";
 import { useRouter } from "next/router";
-
-// Mock data for demonstration purposes
-const mockDomains = [
-  { id: 1, name: "awesome.eth", currentPrice: 0.5, timeLeft: 3600 },
-  { id: 2, name: "crypto.eth", currentPrice: 1.2, timeLeft: 7200 },
-  { id: 3, name: "blockchain.eth", currentPrice: 0.8, timeLeft: 5400 },
-  { id: 4, name: "defi.eth", currentPrice: 0.3, timeLeft: 1800 },
-  { id: 5, name: "nft.eth", currentPrice: 0.6, timeLeft: 2700 },
-  { id: 6, name: "web3.eth", currentPrice: 0.9, timeLeft: 4500 },
-];
+import { Domain } from "@/src/types";
+import { formatEther, parseEther } from "viem";
 
 type ViewMode = "grid" | "table";
 
@@ -45,13 +37,66 @@ export default function Component() {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const router = useRouter();
 
-  const filteredDomains = mockDomains
+  const [domains, setDomains] = useState<
+    Pick<Domain, "id" | "name" | "currentPrice" | "expiry">[]
+  >([]);
+
+  useEffect(() => {
+    const fetchListings = async () => {
+      try {
+        const response = await fetch(
+          process.env.NEXT_PUBLIC_ENS_RENT_GRAPHQL_URL!,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              query: `
+              {
+                listings {
+                  id
+                  price
+                  lender
+                  active
+                  blockNumber
+                  name
+                }
+              }
+            `,
+            }),
+          }
+        );
+
+        const { data } = await response.json();
+
+        // Transform the data into the expected format
+        const transformedData = data.listings
+          .filter((listing: any) => listing.active)
+          .map((listing: any, index: number) => ({
+            id: index + 1,
+            name: `${listing.name}.eth`,
+            currentPrice: formatEther(listing.price),
+            expiry: 3600, // Default 1 hour for now
+          }));
+
+        setDomains(transformedData);
+      } catch (error) {
+        console.error("Error fetching listings:", error);
+        setDomains([]);
+      }
+    };
+
+    fetchListings();
+  }, []);
+
+  const filteredDomains = domains
     .filter((domain) =>
       domain.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
       if (sortBy === "price") return a.currentPrice - b.currentPrice;
-      if (sortBy === "time") return a.timeLeft - b.timeLeft;
+      if (sortBy === "time") return a.expiry - b.expiry;
       return 0;
     });
 
@@ -74,7 +119,7 @@ export default function Component() {
               </div>
               <div className="flex items-center">
                 <Clock className="w-5 h-5 text-blue-500 mr-2" />
-                <span>{Math.floor(domain.timeLeft / 60)} min left</span>
+                <span>{Math.floor(domain.expiry / 60)} min left</span>
               </div>
             </div>
           </CardContent>
@@ -115,7 +160,7 @@ export default function Component() {
               <TableCell>
                 <div className="flex items-center">
                   <Clock className="w-4 h-4 text-blue-500 mr-2" />
-                  {Math.floor(domain.timeLeft / 60)} min
+                  {Math.floor(domain.expiry / 60)} min
                 </div>
               </TableCell>
               <TableCell>

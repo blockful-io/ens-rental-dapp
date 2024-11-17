@@ -9,17 +9,23 @@ import { RainbowKitProvider } from "@rainbow-me/rainbowkit";
 import { config } from "../wagmi";
 import { SiteHeader } from "../components/navbar";
 
-const client = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000,
+    },
+  },
+});
 
 export default function MyApp({ Component, pageProps }: AppProps) {
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={client}>
+    <QueryClientProvider client={queryClient}>
+      <WagmiProvider config={config}>
         <RainbowKitProvider>
           <SiteHeader />
           <Component {...pageProps} />
         </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+      </WagmiProvider>
+    </QueryClientProvider>
   );
 }

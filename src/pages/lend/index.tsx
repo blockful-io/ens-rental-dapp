@@ -63,7 +63,8 @@ export default function Component() {
     }
 
     const node = namehash(domain);
-    const tokenId = BigInt(labelhash(domain.split(".")[0]));
+    const name = domain.split(".")[0];
+    const tokenId = BigInt(labelhash(name));
 
     let owner = (await walletClient.readContract({
       address: baseRegistrarAddress,
@@ -105,7 +106,7 @@ export default function Component() {
         address: ensRentAddress,
         abi: ensRentABI,
         functionName: "listDomain",
-        args: [tokenId, pricePerSecond, maxEndTimestamp, node],
+        args: [tokenId, pricePerSecond, maxEndTimestamp, node, name],
         account: address,
       });
       await walletClient.writeContract(request);

@@ -4,16 +4,20 @@ import { AlertCircle, ArrowLeft, Clock, Tag } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useAccount } from "wagmi";
-
-// Update mock data
-const mockListing = {
-  price: 0.5,
-  status: "available", // available or sold
-  seller: "0x3a872f8FED4421E7d5BE5c98Ab5Ea0e0245169A1",
-  duration: 365, // rental duration in days
-};
+import { ensRentGraphQL } from "@/src/wagmi";
+import { formatEther, labelhash, parseEther } from "viem";
+import { createWalletClient, custom, publicActions } from "viem";
+import { ensRentAddress } from "@/src/wagmi";
+import ensRentABI from "@/abis/ensrent.json";
+import { config } from "@/src/wagmi";
 
 export default function DomainBuy() {
   const router = useRouter();
@@ -21,18 +25,136 @@ export default function DomainBuy() {
   const [isSeller, setIsSeller] = useState(false);
   const { slug: domain } = router.query;
 
+  const [listing, setListing] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    setIsSeller(connectedAccount === mockListing.seller);
+    const fetchListing = async () => {
+      if (!domain) return;
+      try {
+        const response = await fetch(ensRentGraphQL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            query: `
+              query GetListing($id: ID!) {
+                listing(id: $id) {
+                  id
+                  price
+                  lender
+                  active
+                }
+              }
+              `,
+            variables: {
+              id: BigInt(
+                labelhash((domain as string).replace(".eth", ""))
+              ).toString(),
+            },
+          }),
+        });
+
+        const { data } = await response.json();
+
+        if (data.listing) {
+          setListing(data.listing);
+          setIsSeller(
+            connectedAccount?.toLowerCase() ===
+              data.listing.lender.toLowerCase()
+          );
+        } else {
+          setError("Listing not found");
+        }
+      } catch (err) {
+        console.error("Error fetching listing:", err);
+        setError("Error fetching listing details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchListing();
+  }, [domain, connectedAccount]);
+
+  useEffect(() => {
+    // setIsSeller(connectedAccount === mockListing.seller);
   }, [connectedAccount]);
 
-  const handleBuy = () => {
-    // Handle purchase logic here
-    console.log("Purchasing domain");
+  const handleBuy = async () => {
+    if (!listing || !domain) return;
+
+    debugger;
+
+    try {
+      const walletClient = createWalletClient({
+        account: connectedAccount,
+        transport: custom(window.ethereum),
+        chain: config.chains[0],
+      }).extend(publicActions);
+
+      const tokenId = BigInt(labelhash((domain as string).replace(".eth", "")));
+      const desiredEndTimestamp = BigInt(Math.floor(Date.now() / 1000) + 900); // current timestamp plus 1h
+
+      const { request } = await walletClient.simulateContract({
+        address: ensRentAddress,
+        abi: ensRentABI,
+        functionName: "rentDomain",
+        args: [tokenId, desiredEndTimestamp],
+        value: parseEther("0.001", "wei"),
+        account: connectedAccount,
+      });
+
+      await walletClient.writeContract(request);
+      return router.push("/");
+    } catch (err) {
+      console.error("Error renting domain:", err);
+      setError("Failed to rent domain. Please try again.");
+    }
   };
 
   const handleCloseRental = () => {
     console.log("Closing rental");
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Loading...</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-red-500">Error</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>{error}</p>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={() => router.push("/")} variant="outline">
+              Return Home
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 dark:bg-gray-900">
@@ -53,7 +175,7 @@ export default function DomainBuy() {
             {domain}
           </h1>
           <p className="text-gray-500 dark:text-gray-400">
-            {mockListing.status === "available"
+            {listing.status === "available"
               ? "Available for Rent"
               : "Already Rented"}
           </p>
@@ -63,7 +185,7 @@ export default function DomainBuy() {
         <Card className="p-6">
           <div className="grid grid-cols-1 gap-8">
             <div className="space-y-6">
-              {mockListing.status === "sold" ? (
+              {listing.status === "sold" ? (
                 <Alert variant="destructive">
                   <AlertCircle className="size-4" />
                   <AlertTitle>Domain Already Rented</AlertTitle>
@@ -81,7 +203,7 @@ export default function DomainBuy() {
                         <span className="text-lg font-medium">Price</span>
                       </div>
                       <span className="text-2xl font-bold">
-                        {mockListing.price} ETH
+                        {formatEther(listing.price)} ETH
                       </span>
                     </div>
 
@@ -91,7 +213,7 @@ export default function DomainBuy() {
                         <span className="text-lg font-medium">Duration</span>
                       </div>
                       <span className="text-2xl font-bold">
-                        {mockListing.duration} days
+                        {listing.duration} days
                       </span>
                     </div>
                   </div>
@@ -110,7 +232,7 @@ export default function DomainBuy() {
 
                   {!isSeller ? (
                     <Button size="lg" className="w-full" onClick={handleBuy}>
-                      Rent Now for {mockListing.price} ETH
+                      Rent Now for {formatEther(listing.price)} ETH
                     </Button>
                   ) : (
                     <Button
@@ -129,7 +251,7 @@ export default function DomainBuy() {
                   <h2 className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
                     Listed by
                   </h2>
-                  <p className="font-medium">{mockListing.seller}</p>
+                  <p className="font-medium">{listing.seller}</p>
                 </div>
               )}
             </div>
@@ -148,7 +270,7 @@ export default function DomainBuy() {
             <p>• Price is fixed and non-negotiable</p>
             <p>• Payment is required in ETH</p>
             <p>• Domain transfer will be executed automatically</p>
-            <p>• Duration: {mockListing.duration} days</p>
+            <p>• Duration: {listing.duration} days</p>
           </CardContent>
         </Card>
       </div>
