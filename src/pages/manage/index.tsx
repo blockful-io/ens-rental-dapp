@@ -34,7 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import useDomainsByAddress from "@/hooks/useDomains";
+import useDomainsByAddress from "@/src/hooks/useDomains";
 import { ClientWithEns } from "@ensdomains/ensjs/dist/types/contracts/consts";
 import { useAccount } from "wagmi";
 import { usePublicClient } from "wagmi";
@@ -61,7 +61,7 @@ export default function RegisteredDomains() {
   useEffect(() => {
     async function getDomains() {
       const filteredDomains = [
-        ...availableNames.map((name, i) => ({
+        ...availableNames.map((name: string, i: number) => ({
           id: i,
           name,
           domain: name,
