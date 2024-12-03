@@ -1,9 +1,7 @@
-import { addEnsContracts } from '@ensdomains/ensjs';
-import { getDefaultConfig } from '@rainbow-me/rainbowkit';
-import { http } from 'viem';
-import {
-  sepolia,
-} from 'wagmi/chains';
+import { addEnsContracts } from "@ensdomains/ensjs";
+import { getDefaultConfig } from "@rainbow-me/rainbowkit";
+import { http } from "viem";
+import { sepolia } from "wagmi/chains";
 
 if (!process.env.NEXT_PUBLIC_RENTAL_CONTRACT_ADDRESS) {
   throw new Error("NEXT_PUBLIC_RENTAL_CONTRACT_ADDRESS is not set");
@@ -25,11 +23,9 @@ if (!process.env.NEXT_PUBLIC_ENS_GRAPHQL_URL) {
 }
 
 export const config = getDefaultConfig({
-  appName: 'ENS Rental',
-  projectId: 'YOUR_PROJECT_ID',
-  chains: [
-    addEnsContracts(sepolia),
-  ],
+  appName: "ENS Rental",
+  projectId: "YOUR_PROJECT_ID",
+  chains: [addEnsContracts(sepolia)],
   transports: {
     [sepolia.id]: http(process.env.NEXT_PUBLIC_RPC_URL),
   },
@@ -43,5 +39,5 @@ export const baseRegistrarAddress = process.env
 export const nameWrapperAddress = process.env
   .NEXT_PUBLIC_NAMEWRAPPER_ADDRESS as `0x${string}`;
 
-export const ensGraphQL = process.env.NEXT_PUBLIC_ENS_GRAPHQL_URL
-export const ensRentGraphQL = process.env.NEXT_PUBLIC_ENS_RENT_GRAPHQL_URL
+export const ensGraphQL = process.env.NEXT_PUBLIC_ENS_GRAPHQL_URL;
+export const ensRentGraphQL = process.env.NEXT_PUBLIC_ENS_RENT_GRAPHQL_URL;

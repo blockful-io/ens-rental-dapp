@@ -63,6 +63,7 @@ export default function RegisteredDomains() {
       const filteredDomains = [
         ...availableNames.map((name, i) => ({
           id: i,
+          name,
           domain: name,
           registrationDate: "",
           expiryDate: "",
@@ -145,7 +146,8 @@ export default function RegisteredDomains() {
           <CardHeader>
             <CardTitle>My Registered Domains</CardTitle>
             <CardDescription>
-              Manage your registered ENS domains and their rental status
+              Manage your registered ENS domains and their rental status - Show
+              lend domains and their status
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -38,7 +38,7 @@ export default function Component() {
   const router = useRouter();
 
   const [domains, setDomains] = useState<
-    Pick<Domain, "id" | "name" | "currentPrice" | "expiry">[]
+    Pick<Domain, "id" | "name" | "rentPrice" | "expiryDate">[]
   >([]);
 
   useEffect(() => {
@@ -68,6 +68,10 @@ export default function Component() {
           }
         );
 
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const { data } = await response.json();
 
         // Transform the data into the expected format
@@ -95,8 +99,8 @@ export default function Component() {
       domain.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
-      if (sortBy === "price") return a.currentPrice - b.currentPrice;
-      if (sortBy === "time") return a.expiry - b.expiry;
+      if (sortBy === "price") return a.rentPrice - b.rentPrice;
+      if (sortBy === "time") return Number(a.expiryDate) - Number(b.expiryDate);
       return 0;
     });
 
@@ -114,12 +118,14 @@ export default function Component() {
               <div className="flex items-center">
                 <TrendingDown className="w-5 h-5 text-green-500 mr-2" />
                 <span className="text-lg font-medium">
-                  {domain.currentPrice} ETH
+                  {domain.rentPrice} ETH
                 </span>
               </div>
               <div className="flex items-center">
                 <Clock className="w-5 h-5 text-blue-500 mr-2" />
-                <span>{Math.floor(domain.expiry / 60)} min left</span>
+                <span>
+                  {Math.floor(Number(domain.expiryDate) / 60)} min left
+                </span>
               </div>
             </div>
           </CardContent>
@@ -154,13 +160,13 @@ export default function Component() {
               <TableCell>
                 <div className="flex items-center">
                   <TrendingDown className="w-4 h-4 text-green-500 mr-2" />
-                  {domain.currentPrice} ETH
+                  {domain.rentPrice} ETH
                 </div>
               </TableCell>
               <TableCell>
                 <div className="flex items-center">
                   <Clock className="w-4 h-4 text-blue-500 mr-2" />
-                  {Math.floor(domain.expiry / 60)} min
+                  {Math.floor(Number(domain.expiryDate) / 60)} min
                 </div>
               </TableCell>
               <TableCell>
@@ -185,7 +191,8 @@ export default function Component() {
           <CardHeader>
             <CardTitle>Available ENS Domains</CardTitle>
             <CardDescription>
-              Browse and rent available ENS domains
+              Browse and rent available ENS domains - Show all domains available
+              for rent
             </CardDescription>
           </CardHeader>
           <CardContent>
