@@ -2,15 +2,15 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { AlertCircle, ArrowLeft, Clock, Tag } from "lucide-react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/src/components/ui/alert";
+import { Button } from "@/src/components/ui/button";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from "@/src/components/ui/card";
 import { useAccount } from "wagmi";
 import { ensRentGraphQL } from "@/src/wagmi";
 import { formatEther, labelhash, parseEther } from "viem";
