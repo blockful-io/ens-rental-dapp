@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/src/components/ui/button";
 
 export function SiteHeader() {
   return (
