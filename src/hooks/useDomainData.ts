@@ -22,29 +22,6 @@ export default function useDomainData(
 
       setIsLoading(true);
 
-      // Simulating API call delay
-      setTimeout(() => {
-        const mockedListing: DomainListing = {
-          id: "1",
-          price: "0.1",
-          lender: "0x1234567890123456789012345678901234567890",
-          active: true,
-        };
-
-        setListing(mockedListing);
-        setIsLoading(false);
-      }, 1000); // Simulate 1 second delay
-    };
-
-    fetchListing();
-
-    // Commented out real implementation for future use
-    /*
-    const fetchListing = async () => {
-      if (!domain) return;
-
-      setIsLoading(true);
-
       try {
         const response = await fetch(ensRentGraphQL, {
           method: "POST",
@@ -53,22 +30,26 @@ export default function useDomainData(
           },
           body: JSON.stringify({
             query: `
-              query GetListing($id: ID!) {
-                listing(id: $id) {
-                  id
+              query GetListing($tokenId: BigInt!) {
+                listing(tokenId: $tokenId) {
+                  name
                   price
+                  rentalEnd
+                  isWrapped
+                  createdAt
                   lender
-                  active
                 }
               }
             `,
             variables: {
-              id: BigInt(labelhash(domain.replace(".eth", ""))).toString(),
+              tokenId: BigInt(labelhash(domain.replace(".eth", ""))).toString(),
             },
           }),
         });
 
         const { data } = await response.json();
+
+        console.log("GraphQL Response:", data);
 
         if (data.listing) {
           setListing(data.listing);
@@ -84,7 +65,6 @@ export default function useDomainData(
     };
 
     fetchListing();
-    */
   }, [domain]);
 
   return [listing, isLoading, error];

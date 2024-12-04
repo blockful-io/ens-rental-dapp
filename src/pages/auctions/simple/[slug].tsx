@@ -27,6 +27,8 @@ export default function DomainBuy() {
 
   const [listing, isLoading, error] = useDomainData(domain as string);
 
+  const isActive = true;
+
   useEffect(() => {
     if (listing && connectedAccount) {
       setIsSeller(
@@ -154,7 +156,7 @@ export default function DomainBuy() {
         <Card className="p-6">
           <div className="grid grid-cols-1 gap-8">
             <div className="space-y-6">
-              {!listing.active ? (
+              {!isActive ? (
                 <Alert variant="destructive">
                   <AlertCircle className="size-4" />
                   <AlertTitle>Domain Not Available</AlertTitle>

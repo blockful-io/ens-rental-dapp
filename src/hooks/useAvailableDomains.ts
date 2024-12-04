@@ -66,7 +66,7 @@ export default function useAvailableDomains(): [
             .map((listing: any, index: number) => ({
               id: listing.id,
               name: `${listing.name}.eth`,
-              rentPrice: formatEther(listing.price),
+              rentPrice: listing.price,
               expiryDate: listing.rentalEnd,
             }));
           setDomains(availableDomains);
