@@ -94,7 +94,7 @@ export default function Component() {
           <TableRow className="bg-white text-black">
             <TableHead>Domain Name</TableHead>
             <TableHead>Price</TableHead>
-            <TableHead>Time Left</TableHead>
+            <TableHead>Expiry Date</TableHead>
             <TableHead>Action</TableHead>
           </TableRow>
         </TableHeader>
@@ -111,10 +111,9 @@ export default function Component() {
               <TableCell>
                 <div className="flex items-center">
                   <Clock className="w-4 h-4 text-blue-500 mr-2" />
-                  {Math.floor(
-                    (Number(domain.expiryDate) - Date.now()) / 60000
-                  )}{" "}
-                  min
+                  {new Date(
+                    Number(domain.expiryDate) * 1000
+                  ).toLocaleDateString("en-GB")}
                 </div>
               </TableCell>
               <TableCell>
