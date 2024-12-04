@@ -1,12 +1,14 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+"use client";
+
+import { useState, useEffect } from "react";
+import { Button } from "@/src/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/src/components/ui/select";
 import {
   Card,
   CardContent,
@@ -14,9 +16,9 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/src/components/ui/card";
+import { Input } from "@/src/components/ui/input";
+import { Label } from "@/src/components/ui/label";
 import { useRouter } from "next/router";
 import { useAccount } from "wagmi";
 import {
@@ -35,35 +37,45 @@ import {
   baseRegistrarAddress,
   nameWrapperAddress,
 } from "@/src/wagmi";
-import useDomainsByAddress from "@/hooks/useDomains";
+import useDomainsByAddress from "@/src/hooks/useDomains";
 import ensRentABI from "@/abis/ensrent.json";
 import baseRegistrarABI from "@/abis/baseRegistrar.json";
 import nameWrapperABI from "@/abis/nameWrapper.json";
+
 export default function Component() {
   const router = useRouter();
-  const [domain, setDomain] = useState(router.query.domain as string);
+  const [domain, setDomain] = useState("");
   const [startingPrice, setStartingPrice] = useState<number | null>(null);
   const [duration, setDuration] = useState(0);
   const { address } = useAccount();
-  const walletClient = createWalletClient({
-    account: address,
-    transport: custom(window.ethereum),
-    chain: config.chains[0],
-  }).extend(publicActions);
+  const [walletClient, setWalletClient] = useState<any>(null);
 
-  if (!address) {
-    return router.push("/");
-  }
+  useEffect(() => {
+    if (typeof window !== "undefined" && address) {
+      const client = createWalletClient({
+        account: address,
+        transport: custom(window.ethereum),
+        chain: config.chains[0],
+      }).extend(publicActions);
+      setWalletClient(client);
+    }
+  }, [address]);
+
+  useEffect(() => {
+    if (router.query.domain) {
+      setDomain(router.query.domain as string);
+    }
+  }, [router.query]);
 
   const [names, isLoading, error] = useDomainsByAddress(address);
 
-  const listDomain = async (domain: string) => {
-    if (!startingPrice || !duration) {
+  const listDomain = async (domainToList: string) => {
+    if (!startingPrice || !duration || !walletClient) {
       return;
     }
 
-    const node = namehash(domain);
-    const name = domain.split(".")[0];
+    const node = namehash(domainToList);
+    const name = domainToList.split(".")[0];
     const tokenId = BigInt(labelhash(name));
 
     let owner = (await walletClient.readContract({
@@ -73,7 +85,6 @@ export default function Component() {
       args: [tokenId],
     })) as `0x${string}`;
 
-    debugger;
     if (owner !== nameWrapperAddress) owner = baseRegistrarAddress;
 
     const approvedForAll = (await walletClient.readContract({
@@ -110,11 +121,20 @@ export default function Component() {
         account: address,
       });
       await walletClient.writeContract(request);
-      return router.push(`/auctions/simple/${domain}`);
+      return router.push(`/auctions/simple/${domainToList}`);
     } catch (error) {
       console.error({ error });
     }
   };
+
+  if (typeof window === "undefined") {
+    return null; // or return a loading state
+  }
+
+  if (!address) {
+    router.push("/");
+    return null;
+  }
 
   if (error) {
     return (

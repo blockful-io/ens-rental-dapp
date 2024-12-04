@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { Button } from "@/src/components/ui/button";
+import { Input } from "@/src/components/ui/input";
 import {
   Card,
   CardContent,
@@ -8,14 +8,14 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
+} from "@/src/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/src/components/ui/select";
 import {
   Table,
   TableBody,
@@ -23,11 +23,10 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/src/components/ui/table";
 import { Search, Clock, TrendingDown, LayoutGrid, List } from "lucide-react";
 import { useRouter } from "next/router";
-import { Domain } from "@/src/types";
-import { formatEther, parseEther } from "viem";
+import useAvailableDomains from "@/src/hooks/useAvailableDomains";
 
 type ViewMode = "grid" | "table";
 
@@ -37,66 +36,15 @@ export default function Component() {
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const router = useRouter();
 
-  const [domains, setDomains] = useState<
-    Pick<Domain, "id" | "name" | "currentPrice" | "expiry">[]
-  >([]);
+  const [availableDomains, isLoading, error] = useAvailableDomains();
 
-  useEffect(() => {
-    const fetchListings = async () => {
-      try {
-        const response = await fetch(
-          process.env.NEXT_PUBLIC_ENS_RENT_GRAPHQL_URL!,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              query: `
-              {
-                listings {
-                  id
-                  price
-                  lender
-                  active
-                  blockNumber
-                  name
-                }
-              }
-            `,
-            }),
-          }
-        );
-
-        const { data } = await response.json();
-
-        // Transform the data into the expected format
-        const transformedData = data.listings
-          .filter((listing: any) => listing.active)
-          .map((listing: any, index: number) => ({
-            id: index + 1,
-            name: `${listing.name}.eth`,
-            currentPrice: formatEther(listing.price),
-            expiry: 3600, // Default 1 hour for now
-          }));
-
-        setDomains(transformedData);
-      } catch (error) {
-        console.error("Error fetching listings:", error);
-        setDomains([]);
-      }
-    };
-
-    fetchListings();
-  }, []);
-
-  const filteredDomains = domains
+  const filteredDomains = availableDomains
     .filter((domain) =>
       domain.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
-      if (sortBy === "price") return a.currentPrice - b.currentPrice;
-      if (sortBy === "time") return a.expiry - b.expiry;
+      if (sortBy === "price") return Number(a.rentPrice) - Number(b.rentPrice);
+      if (sortBy === "time") return Number(a.expiryDate) - Number(b.expiryDate);
       return 0;
     });
 
@@ -114,12 +62,15 @@ export default function Component() {
               <div className="flex items-center">
                 <TrendingDown className="w-5 h-5 text-green-500 mr-2" />
                 <span className="text-lg font-medium">
-                  {domain.currentPrice} ETH
+                  {domain.rentPrice} ETH
                 </span>
               </div>
               <div className="flex items-center">
                 <Clock className="w-5 h-5 text-blue-500 mr-2" />
-                <span>{Math.floor(domain.expiry / 60)} min left</span>
+                <span>
+                  {Math.floor((Number(domain.expiryDate) - Date.now()) / 60000)}{" "}
+                  min left
+                </span>
               </div>
             </div>
           </CardContent>
@@ -137,13 +88,13 @@ export default function Component() {
   );
 
   const TableView = () => (
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow className="bg-white text-black">
             <TableHead>Domain Name</TableHead>
             <TableHead>Price</TableHead>
-            <TableHead>Time Left</TableHead>
+            <TableHead>Expiry Date</TableHead>
             <TableHead>Action</TableHead>
           </TableRow>
         </TableHeader>
@@ -154,13 +105,15 @@ export default function Component() {
               <TableCell>
                 <div className="flex items-center">
                   <TrendingDown className="w-4 h-4 text-green-500 mr-2" />
-                  {domain.currentPrice} ETH
+                  {domain.rentPrice} ETH
                 </div>
               </TableCell>
               <TableCell>
                 <div className="flex items-center">
                   <Clock className="w-4 h-4 text-blue-500 mr-2" />
-                  {Math.floor(domain.expiry / 60)} min
+                  {new Date(
+                    Number(domain.expiryDate) * 1000
+                  ).toLocaleDateString("en-GB")}
                 </div>
               </TableCell>
               <TableCell>
@@ -185,7 +138,8 @@ export default function Component() {
           <CardHeader>
             <CardTitle>Available ENS Domains</CardTitle>
             <CardDescription>
-              Browse and rent available ENS domains
+              Browse and rent available ENS domains - Show all domains available
+              for rent
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -227,7 +181,15 @@ export default function Component() {
                 </div>
               </div>
 
-              {viewMode === "grid" ? <GridView /> : <TableView />}
+              {isLoading ? (
+                <p>Loading available domains...</p>
+              ) : error ? (
+                <p>Error: {error.message}</p>
+              ) : viewMode === "grid" ? (
+                <GridView />
+              ) : (
+                <TableView />
+              )}
             </div>
           </CardContent>
         </Card>

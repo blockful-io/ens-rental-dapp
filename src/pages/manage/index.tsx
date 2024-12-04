@@ -6,7 +6,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/src/components/ui/table";
 import {
   Card,
   CardContent,
@@ -14,16 +14,16 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+} from "@/src/components/ui/card";
+import { Input } from "@/src/components/ui/input";
+import { Button } from "@/src/components/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/src/components/ui/select";
 import { Search, Timer, Tag } from "lucide-react";
 import { useRouter } from "next/router";
 import {
@@ -33,8 +33,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import useDomainsByAddress from "@/hooks/useDomains";
+} from "@/src/components/ui/dialog";
+import useDomainsByAddress from "@/src/hooks/useDomains";
 import { ClientWithEns } from "@ensdomains/ensjs/dist/types/contracts/consts";
 import { useAccount } from "wagmi";
 import { usePublicClient } from "wagmi";
@@ -61,8 +61,9 @@ export default function RegisteredDomains() {
   useEffect(() => {
     async function getDomains() {
       const filteredDomains = [
-        ...availableNames.map((name, i) => ({
+        ...availableNames.map((name: string, i: number) => ({
           id: i,
+          name,
           domain: name,
           registrationDate: "",
           expiryDate: "",
@@ -145,7 +146,8 @@ export default function RegisteredDomains() {
           <CardHeader>
             <CardTitle>My Registered Domains</CardTitle>
             <CardDescription>
-              Manage your registered ENS domains and their rental status
+              Manage your registered ENS domains and their rental status - Show
+              lend domains and their status
             </CardDescription>
           </CardHeader>
           <CardContent>
