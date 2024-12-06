@@ -6,7 +6,10 @@ interface DomainListing {
   id: string;
   price: string;
   lender: string;
-  active: boolean;
+  rentalEnd: string;
+  name: string;
+  isWrapped: boolean;
+  createdAt: string;
 }
 
 export default function useDomainData(

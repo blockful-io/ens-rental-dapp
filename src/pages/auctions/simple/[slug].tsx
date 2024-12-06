@@ -24,10 +24,14 @@ export default function DomainBuy() {
   const { address: connectedAccount } = useAccount();
   const [isSeller, setIsSeller] = useState(false);
   const { slug: domain } = router.query;
+  const [selectedEndDate, setSelectedEndDate] = useState("");
+  const [duration, setDuration] = useState(900); // Default 15 minutes
 
   const [listing, isLoading, error] = useDomainData(domain as string);
 
   const isActive = true;
+  const pricePerSecond = BigInt(listing?.price || 0);
+  const totalPrice = pricePerSecond * BigInt(duration);
 
   useEffect(() => {
     if (listing && connectedAccount) {
@@ -37,8 +41,16 @@ export default function DomainBuy() {
     }
   }, [listing, connectedAccount]);
 
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedEndDate(e.target.value);
+    const start = new Date().getTime();
+    const end = new Date(e.target.value).getTime();
+    const newDuration = Math.floor((end - start) / 1000);
+    setDuration(newDuration);
+  };
+
   const handleBuy = async () => {
-    if (!listing || !domain) return;
+    if (!listing || !domain || !selectedEndDate) return;
 
     try {
       const walletClient = createWalletClient({
@@ -48,18 +60,18 @@ export default function DomainBuy() {
       }).extend(publicActions);
 
       const tokenId = BigInt(labelhash((domain as string).replace(".eth", "")));
-      const desiredEndTimestamp = BigInt(Math.floor(Date.now() / 1000) + 900); // current timestamp plus 15 minutes
+      const desiredEndTimestamp = BigInt(
+        new Date(selectedEndDate).getTime() / 1000
+      );
 
-      const { request } = await walletClient.simulateContract({
+      await walletClient.writeContract({
         address: ensRentAddress,
         abi: ensRentABI,
         functionName: "rentDomain",
         args: [tokenId, desiredEndTimestamp],
-        value: parseEther(listing.price),
-        account: connectedAccount,
+        value: totalPrice,
+        account: connectedAccount!,
       });
-
-      await walletClient.writeContract(request);
       return router.push("/");
     } catch (err) {
       console.error("Error renting domain:", err);
@@ -147,9 +159,9 @@ export default function DomainBuy() {
           <h1 className="mb-2 text-3xl font-bold text-gray-800 dark:text-white">
             {domain}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          {/* <p className="text-gray-500 dark:text-gray-400">
             {listing.active ? "Available for Rent" : "Not Available"}
-          </p>
+          </p> */}
         </div>
 
         {/* Main info card */}
@@ -174,11 +186,32 @@ export default function DomainBuy() {
                         <span className="text-lg font-medium">Price</span>
                       </div>
                       <span className="text-2xl font-bold">
-                        {listing.price} ETH
+                        {formatEther(BigInt(totalPrice))} ETH
                       </span>
                     </div>
 
-                    {/* Note: Duration is not provided by the useDomainData hook. You may need to add this information if available. */}
+                    <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                      <div className="flex items-center gap-2">
+                        <Clock className="size-5 text-blue-500" />
+                        <span className="text-lg font-medium">End Date</span>
+                      </div>
+                      <input
+                        type="date"
+                        value={selectedEndDate}
+                        min={
+                          new Date(Date.now() + 86400000)
+                            .toISOString()
+                            .split("T")[0]
+                        }
+                        max={
+                          new Date(Number(listing.rentalEnd) * 1000)
+                            .toISOString()
+                            .split("T")[0]
+                        }
+                        onChange={handleDateChange}
+                        className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      />
+                    </div>
                   </div>
 
                   {!isSeller && (
@@ -194,8 +227,13 @@ export default function DomainBuy() {
                   )}
 
                   {!isSeller ? (
-                    <Button size="lg" className="w-full" onClick={handleBuy}>
-                      Rent Now for {listing.price} ETH
+                    <Button
+                      size="lg"
+                      className="w-full"
+                      onClick={handleBuy}
+                      disabled={!selectedEndDate}
+                    >
+                      Rent Now for {formatEther(totalPrice)} ETH
                     </Button>
                   ) : (
                     <Button
@@ -233,7 +271,12 @@ export default function DomainBuy() {
             <p>• Price is fixed and non-negotiable</p>
             <p>• Payment is required in ETH</p>
             <p>• Domain transfer will be executed automatically</p>
-            {/* Note: Duration is not provided by the useDomainData hook. You may need to add this information if available. */}
+            {selectedEndDate && (
+              <p>
+                • Rental ends on:{" "}
+                {new Date(selectedEndDate).toLocaleDateString()}
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
