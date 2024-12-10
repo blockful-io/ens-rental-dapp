@@ -35,9 +35,7 @@ export default function DomainBuy() {
 
   const pricePerSecond = BigInt(listing?.price || 0);
   console.log("pricePerSecond", pricePerSecond);
-  const totalPrice = parseEther(
-    (Number(pricePerSecond) * Math.floor(duration)).toString()
-  );
+  const totalPrice = pricePerSecond * BigInt(duration);
 
   console.log("pricePerSecond", pricePerSecond);
   console.log("totalPrice", totalPrice);
