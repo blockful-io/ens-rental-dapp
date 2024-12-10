@@ -42,6 +42,8 @@ import ensRentABI from "@/abis/ensrent.json";
 import baseRegistrarABI from "@/abis/baseRegistrar.json";
 import nameWrapperABI from "@/abis/nameWrapper.json";
 
+export const ONE_YEAR_IN_SECONDS = 31536000;
+
 export default function Component() {
   const router = useRouter();
   const [domain, setDomain] = useState("");
@@ -107,6 +109,18 @@ export default function Component() {
         hash: await walletClient.writeContract(request),
       });
     }
+
+    // const { request } = await walletClient.simulateContract({
+    //   address: owner,
+    //   abi: baseRegistrarABI,
+    //   functionName: "approve",
+    //   args: [ensRentAddress, tokenId],
+    //   account: address,
+    // });
+    // await walletClient.writeContract(request);
+    // await walletClient.waitForTransactionReceipt({
+    //   hash: await walletClient.writeContract(request),
+    // });
 
     try {
       const pricePerSecond =

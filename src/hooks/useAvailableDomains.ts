@@ -4,9 +4,15 @@ import { formatEther } from "viem";
 
 interface AvailableDomain {
   id: string;
+  maxRentalTime: string;
+  createdAt: string;
+  available: boolean;
+  isWrapped: boolean;
+  lender: string;
+  node: string;
   name: string;
-  rentPrice: string;
-  expiryDate: string;
+  price: string;
+  tokenId: string;
 }
 
 export default function useAvailableDomains(): [
@@ -17,6 +23,9 @@ export default function useAvailableDomains(): [
   const [domains, setDomains] = useState<AvailableDomain[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+
+  const oneDayInSeconds = 24 * 60 * 60;
+  const oneYearInSeconds = 365 * 24 * 60 * 60;
 
   useEffect(() => {
     const fetchAvailableDomains = async () => {
@@ -30,15 +39,18 @@ export default function useAvailableDomains(): [
           body: JSON.stringify({
             query: `
               {
-                listings {
+                listings(where: {available: true}) {
                   items {
-                    name
-                    price
-                    isWrapped
+                    available
                     createdAt
-                    lender
                     id
-                    rentalEnd
+                    isWrapped
+                    lender
+                    maxRentalTime
+                    name
+                    node
+                    price
+                    tokenId
                   }
                 }
               }
@@ -63,12 +75,25 @@ export default function useAvailableDomains(): [
           console.log("data.listings.items", data.listings.items);
           const availableDomains = data.listings.items
             // .filter((listing: any) => listing.active)
-            .map((listing: any, index: number) => ({
-              id: listing.id,
-              name: `${listing.name}.eth`,
-              rentPrice: listing.price,
-              expiryDate: listing.rentalEnd,
-            }));
+            .map((listing: any, index: number) => {
+              // Convert price per second to ETH and multiply by seconds in a year
+              const pricePerYear =
+                BigInt(listing.price) * BigInt(oneYearInSeconds);
+              const priceInEth = formatEther(pricePerYear);
+
+              return {
+                id: listing.id,
+                maxRentalTime: listing.maxRentalTime,
+                createdAt: listing.createdAt,
+                available: listing.available,
+                isWrapped: listing.isWrapped,
+                lender: listing.lender,
+                node: listing.node,
+                name: `${listing.name}.eth`,
+                price: priceInEth,
+                tokenId: listing.tokenId,
+              };
+            });
           setDomains(availableDomains);
         }
       } catch (err) {

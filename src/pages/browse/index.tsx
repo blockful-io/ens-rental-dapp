@@ -43,8 +43,9 @@ export default function Component() {
       domain.name.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
-      if (sortBy === "price") return Number(a.rentPrice) - Number(b.rentPrice);
-      if (sortBy === "time") return Number(a.expiryDate) - Number(b.expiryDate);
+      if (sortBy === "price") return Number(a.price) - Number(b.price);
+      if (sortBy === "time")
+        return Number(a.maxRentalTime) - Number(b.maxRentalTime);
       return 0;
     });
 
@@ -61,14 +62,14 @@ export default function Component() {
             <div className="flex justify-between items-center mb-4">
               <div className="flex items-center">
                 <TrendingDown className="w-5 h-5 text-green-500 mr-2" />
-                <span className="text-lg font-medium">
-                  {domain.rentPrice} ETH
-                </span>
+                <span className="text-lg font-medium">{domain.price} ETH</span>
               </div>
               <div className="flex items-center">
                 <Clock className="w-5 h-5 text-blue-500 mr-2" />
                 <span>
-                  {Math.floor((Number(domain.expiryDate) - Date.now()) / 60000)}{" "}
+                  {Math.floor(
+                    (Number(domain.maxRentalTime) - Date.now()) / 60000
+                  )}{" "}
                   min left
                 </span>
               </div>
@@ -93,39 +94,44 @@ export default function Component() {
         <TableHeader>
           <TableRow className="bg-white text-black">
             <TableHead>Domain Name</TableHead>
-            <TableHead>Price</TableHead>
+            <TableHead>Price per year</TableHead>
             <TableHead>Expiry Date</TableHead>
             <TableHead>Action</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredDomains.map((domain) => (
-            <TableRow key={domain.id}>
-              <TableCell className="font-medium">{domain.name}</TableCell>
-              <TableCell>
-                <div className="flex items-center">
-                  <TrendingDown className="w-4 h-4 text-green-500 mr-2" />
-                  {domain.rentPrice} ETH
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center">
-                  <Clock className="w-4 h-4 text-blue-500 mr-2" />
-                  {new Date(
-                    Number(domain.expiryDate) * 1000
-                  ).toLocaleDateString("en-GB")}
-                </div>
-              </TableCell>
-              <TableCell>
-                <Button
-                  size="sm"
-                  onClick={() => router.push(`/auctions/simple/${domain.name}`)}
-                >
-                  Rent Now
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
+          {filteredDomains.map((domain) => {
+            console.log(domain);
+            return (
+              <TableRow key={domain.id}>
+                <TableCell className="font-medium">{domain.name}</TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    <TrendingDown className="w-4 h-4 text-green-500 mr-2" />
+                    {domain.price} ETH
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    <Clock className="w-4 h-4 text-blue-500 mr-2" />
+                    {new Date(
+                      Number(domain.maxRentalTime) * 1000
+                    ).toLocaleDateString("en-GB")}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      router.push(`/auctions/simple/${domain.name}`)
+                    }
+                  >
+                    Rent Now
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>
