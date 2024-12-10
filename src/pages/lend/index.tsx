@@ -51,6 +51,12 @@ export default function Component() {
   const [duration, setDuration] = useState(0);
   const { address } = useAccount();
   const [walletClient, setWalletClient] = useState<any>(null);
+  const [checkYourWallet, setCheckYourWallet] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+
+  const [isListing, setIsListing] = useState(false);
+  const [isCheckingApproval, setIsCheckingApproval] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined" && address) {
@@ -71,32 +77,67 @@ export default function Component() {
 
   const [names, isLoading, error] = useDomainsByAddress(address);
 
-  const listDomain = async (domainToList: string) => {
-    if (!startingPrice || !duration || !walletClient) {
-      return;
+  const checkApproval = async (domainToCheck: string) => {
+    if (!walletClient) return false;
+
+    setIsCheckingApproval(true);
+    try {
+      const name = domainToCheck.split(".")[0];
+      const tokenId = BigInt(labelhash(name));
+
+      let owner = (await walletClient.readContract({
+        address: baseRegistrarAddress,
+        abi: baseRegistrarABI,
+        functionName: "ownerOf",
+        args: [tokenId],
+      })) as `0x${string}`;
+
+      if (owner !== nameWrapperAddress) owner = baseRegistrarAddress;
+
+      const approvedForAll = (await walletClient.readContract({
+        address: owner,
+        abi: nameWrapperABI,
+        functionName: "isApprovedForAll",
+        args: [address, ensRentAddress],
+      })) as boolean;
+
+      console.log(approvedForAll);
+
+      setIsApproved(approvedForAll);
+      return approvedForAll;
+    } catch (error) {
+      console.error({ error });
+      return false;
+    } finally {
+      setIsCheckingApproval(false);
     }
+  };
 
-    const node = namehash(domainToList);
-    const name = domainToList.split(".")[0];
-    const tokenId = BigInt(labelhash(name));
+  useEffect(() => {
+    if (domain) {
+      console.log("checking approval");
+      checkApproval(domain);
+    }
+  }, [domain]);
 
-    let owner = (await walletClient.readContract({
-      address: baseRegistrarAddress,
-      abi: baseRegistrarABI,
-      functionName: "ownerOf",
-      args: [tokenId],
-    })) as `0x${string}`;
+  const approveDomain = async (domainToApprove: string) => {
+    if (!walletClient) return;
 
-    if (owner !== nameWrapperAddress) owner = baseRegistrarAddress;
+    setIsApproving(true);
+    try {
+      const name = domainToApprove.split(".")[0];
+      const tokenId = BigInt(labelhash(name));
 
-    const approvedForAll = (await walletClient.readContract({
-      address: owner,
-      abi: nameWrapperABI,
-      functionName: "isApprovedForAll",
-      args: [address, ensRentAddress],
-    })) as boolean;
+      let owner = (await walletClient.readContract({
+        address: baseRegistrarAddress,
+        abi: baseRegistrarABI,
+        functionName: "ownerOf",
+        args: [tokenId],
+      })) as `0x${string}`;
 
-    if (!approvedForAll) {
+      if (owner !== nameWrapperAddress) owner = baseRegistrarAddress;
+
+      setCheckYourWallet(true);
       const { request } = await walletClient.simulateContract({
         address: owner,
         abi: nameWrapperABI,
@@ -105,44 +146,59 @@ export default function Component() {
         account: address,
       });
       await walletClient.writeContract(request);
+      setCheckYourWallet(false);
+
       await walletClient.waitForTransactionReceipt({
         hash: await walletClient.writeContract(request),
       });
+
+      setIsApproved(true);
+    } catch (error) {
+      console.error({ error });
+    } finally {
+      setIsApproving(false);
+    }
+  };
+
+  const listDomain = async (domainToList: string) => {
+    if (!startingPrice || !duration || !walletClient) {
+      return;
     }
 
-    // const { request } = await walletClient.simulateContract({
-    //   address: owner,
-    //   abi: baseRegistrarABI,
-    //   functionName: "approve",
-    //   args: [ensRentAddress, tokenId],
-    //   account: address,
-    // });
-    // await walletClient.writeContract(request);
-    // await walletClient.waitForTransactionReceipt({
-    //   hash: await walletClient.writeContract(request),
-    // });
-
+    setIsListing(true);
     try {
+      const node = namehash(domainToList);
+      const name = domainToList.split(".")[0];
+      const tokenId = BigInt(labelhash(name));
+
       const pricePerSecond =
         parseEther(startingPrice.toString()) / BigInt(duration);
       const maxEndTimestamp = BigInt(Math.floor(Date.now() / 1000) + duration);
 
+      setCheckYourWallet(true);
       const { request } = await walletClient.simulateContract({
         address: ensRentAddress,
         abi: ensRentABI,
         functionName: "listDomain",
-        args: [tokenId, pricePerSecond, maxEndTimestamp, node, name],
+        args: [tokenId, 1, maxEndTimestamp, node, name],
         account: address,
       });
-      await walletClient.writeContract(request);
-      return router.push(`/auctions/simple/${domainToList}`);
+
+      const hash = await walletClient.writeContract(request);
+      setCheckYourWallet(false);
+
+      await walletClient.waitForTransactionReceipt({ hash });
+      router.push(`/auctions/simple/${domainToList}`);
     } catch (error) {
       console.error({ error });
+    } finally {
+      setCheckYourWallet(false);
+      setIsListing(false);
     }
   };
 
   if (typeof window === "undefined") {
-    return null; // or return a loading state
+    return null;
   }
 
   if (!address) {
@@ -213,6 +269,20 @@ export default function Component() {
                     ))}
                   </SelectContent>
                 </Select>
+                {domain && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    {isCheckingApproval ? (
+                      <span className="flex items-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 dark:border-white mr-2"></div>
+                        Checking approval status...
+                      </span>
+                    ) : isApproved ? (
+                      "✅ This domain is already approved for rental"
+                    ) : (
+                      "📝 This domain needs approval before it can be listed"
+                    )}
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="startingPrice">Starting Price (ETH)</Label>
@@ -240,12 +310,34 @@ export default function Component() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col items-stretch space-y-4">
-            <Button
-              onClick={async () => await listDomain(domain)}
-              disabled={!domain || !startingPrice || duration <= 0}
-            >
-              Enable Rental
-            </Button>
+            {!domain ? (
+              <Button disabled={true}>Select a domain</Button>
+            ) : isCheckingApproval ? (
+              <Button disabled>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Checking approval...
+              </Button>
+            ) : !isApproved ? (
+              <Button
+                onClick={async () => await approveDomain(domain)}
+                disabled={!domain || isApproving}
+              >
+                {isApproving ? "Approving..." : "Approve Domain for Rental"}
+              </Button>
+            ) : (
+              <Button
+                onClick={async () => await listDomain(domain)}
+                disabled={
+                  !domain || !startingPrice || duration <= 0 || isListing
+                }
+              >
+                {checkYourWallet
+                  ? "Check your wallet"
+                  : isListing
+                  ? "Listing Domain..."
+                  : "List Domain for Rent"}
+              </Button>
+            )}
           </CardFooter>
         </Card>
       </div>
