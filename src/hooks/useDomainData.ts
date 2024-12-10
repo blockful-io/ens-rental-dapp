@@ -10,6 +10,10 @@ interface DomainListing {
   name: string;
   isWrapped: boolean;
   createdAt: string;
+  available: boolean;
+  maxRentalTime: string;
+  node: string;
+  tokenId: string;
 }
 
 export default function useDomainData(
@@ -33,24 +37,38 @@ export default function useDomainData(
           },
           body: JSON.stringify({
             query: `
-              query GetListing($tokenId: BigInt!) {
+              query MyQuery($tokenId: BigInt!) {
                 listing(tokenId: $tokenId) {
-                  name
-                  price
-                  rentalEnd
-                  isWrapped
+                  available
                   createdAt
+                  id
+                  isWrapped
                   lender
+                  maxRentalTime
+                  name
+                  node
+                  price
+                  tokenId
                 }
               }
             `,
             variables: {
-              tokenId: BigInt(labelhash(domain.replace(".eth", ""))).toString(),
+              tokenId: labelhash(domain.replace(".eth", "")),
             },
           }),
         });
 
-        const { data } = await response.json();
+        const responseData = await response.json();
+        console.log("Full server response:", responseData);
+
+        if (responseData.errors) {
+          throw new Error(`GraphQL Error: ${responseData.errors[0].message}`);
+        }
+
+        if (!responseData || !responseData.data) {
+          throw new Error("Invalid response data");
+        }
+        const { data } = responseData as { data: { listing: DomainListing } };
 
         console.log("GraphQL Response:", data);
 

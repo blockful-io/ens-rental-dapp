@@ -24,14 +24,24 @@ export default function DomainBuy() {
   const { address: connectedAccount } = useAccount();
   const [isSeller, setIsSeller] = useState(false);
   const { slug: domain } = router.query;
-  const [selectedEndDate, setSelectedEndDate] = useState("");
-  const [duration, setDuration] = useState(900); // Default 15 minutes
+  const [selectedEndDate, setSelectedEndDate] = useState(new Date());
 
   const [listing, isLoading, error] = useDomainData(domain as string);
+  const [duration, setDuration] = useState(
+    (new Date(selectedEndDate).getTime() - new Date().getTime()) / 1000 // difference between selected end date and now in seconds
+  );
 
   const isActive = true;
+
   const pricePerSecond = BigInt(listing?.price || 0);
-  const totalPrice = pricePerSecond * BigInt(duration);
+  console.log("pricePerSecond", pricePerSecond);
+  const totalPrice = parseEther(
+    (Number(pricePerSecond) * Math.floor(duration)).toString()
+  );
+
+  console.log("pricePerSecond", pricePerSecond);
+  console.log("totalPrice", totalPrice);
+  console.log("duration", duration);
 
   useEffect(() => {
     if (listing && connectedAccount) {
@@ -42,7 +52,7 @@ export default function DomainBuy() {
   }, [listing, connectedAccount]);
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedEndDate(e.target.value);
+    setSelectedEndDate(new Date(e.target.value));
     const start = new Date().getTime();
     const end = new Date(e.target.value).getTime();
     const newDuration = Math.floor((end - start) / 1000);
@@ -51,6 +61,8 @@ export default function DomainBuy() {
 
   const handleBuy = async () => {
     if (!listing || !domain || !selectedEndDate) return;
+
+    console.log("pricePerSecond", pricePerSecond);
 
     try {
       const walletClient = createWalletClient({
@@ -70,9 +82,12 @@ export default function DomainBuy() {
         functionName: "rentDomain",
         args: [tokenId, desiredEndTimestamp],
         value: totalPrice,
+        chain: config.chains[0],
         account: connectedAccount!,
       });
-      return router.push("/");
+
+      return;
+      // return router.push("/");
     } catch (err) {
       console.error("Error renting domain:", err);
       // Handle error (e.g., show an error message to the user)
@@ -141,6 +156,14 @@ export default function DomainBuy() {
     );
   }
 
+  // Calculate min and max dates safely
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDate = tomorrow.toISOString().split("T")[0];
+
+  const rentalEndDate = new Date(Number(listing.rentalEnd) * 1000);
+  const maxDate = new Date(Number(listing.maxRentalTime) * 1000);
+
   return (
     <div className="min-h-screen bg-gray-100 p-4 dark:bg-gray-900">
       <div className="mx-auto max-w-4xl space-y-6">
@@ -197,17 +220,9 @@ export default function DomainBuy() {
                       </div>
                       <input
                         type="date"
-                        value={selectedEndDate}
-                        min={
-                          new Date(Date.now() + 86400000)
-                            .toISOString()
-                            .split("T")[0]
-                        }
-                        max={
-                          new Date(Number(listing.rentalEnd) * 1000)
-                            .toISOString()
-                            .split("T")[0]
-                        }
+                        value={selectedEndDate.toISOString().split("T")[0]}
+                        min={minDate}
+                        max={maxDate.toISOString().split("T")[0]}
                         onChange={handleDateChange}
                         className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       />
