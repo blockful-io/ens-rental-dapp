@@ -171,7 +171,7 @@ export default function DomainBuy() {
         <Button
           variant="ghost"
           className="flex items-center gap-2"
-          onClick={() => router.back()}
+          onClick={() => router.push("/browse")}
         >
           <ArrowLeft className="size-4" />
           Back to Browse

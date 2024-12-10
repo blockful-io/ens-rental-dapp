@@ -96,7 +96,7 @@ export default function RentedDomainDetails() {
         <Button
           variant="ghost"
           className="flex items-center gap-2"
-          onClick={() => router.back()}
+          onClick={() => router.push("/browse")}
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Domains
