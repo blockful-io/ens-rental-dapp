@@ -35,11 +35,10 @@ import {
   DialogTitle,
 } from "@/src/components/ui/dialog";
 import useDomainsByAddress from "@/src/hooks/useDomains";
-import { ClientWithEns } from "@ensdomains/ensjs/dist/types/contracts/consts";
 import { useAccount } from "wagmi";
-import { usePublicClient } from "wagmi";
-import { PublicClient } from "viem";
 import { Domain, RentalStatus } from "@/src/types";
+import useListings from "@/src/hooks/useListings";
+import { formatEther } from "viem";
 
 export default function RegisteredDomains() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,45 +49,54 @@ export default function RegisteredDomains() {
   const router = useRouter();
   const [unlistDomain, setUnlistDomain] = useState<Pick<
     Domain,
-    "id" | "domain"
+    "id" | "name"
   > | null>(null);
   const { address } = useAccount();
-  const publicClient = usePublicClient() as PublicClient & ClientWithEns;
+
+  if (!address) return <div>Loading...</div>;
+
+  const [listings] = useListings({ lender: address });
 
   const [availableNames, isLoading, error] = useDomainsByAddress(address);
   const [filteredDomains, setFilteredDomains] = useState<Domain[]>([]);
 
   useEffect(() => {
     async function getDomains() {
-      const filteredDomains = [
-        ...availableNames.map((name: string, i: number) => ({
-          id: i,
-          name,
-          domain: name,
-          registrationDate: "",
-          expiryDate: "",
-          rentalStatus: RentalStatus.available,
-          currentRenter: null,
-          rentPrice: 0,
-          isListed: false,
-        })),
+      const filteredDomains: Domain[] = [
+        ...availableNames.map(
+          (name: string, i: number): Domain => ({
+            id: i.toString(),
+            name,
+            available: false,
+            status: RentalStatus.available,
+            maxRentalTime: "",
+            price: 0,
+            lender: "",
+            createdAt: "",
+            isWrapped: false,
+            node: "",
+            tokenId: "",
+            borrower: "",
+          })
+        ),
+        ...listings,
       ]
         .filter(
           (domain) =>
-            domain.domain.toLowerCase().includes(searchTerm.toLowerCase()) &&
-            (filteredStatus === "all" || domain.rentalStatus === filteredStatus)
+            domain.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+            (filteredStatus === "all" || domain.status === filteredStatus)
         )
         .sort((a, b) => {
           switch (sortBy) {
             case "name":
-              return a.domain.localeCompare(b.domain);
+              return a.name.localeCompare(b.name);
             case "expiry":
               return (
-                new Date(a.expiryDate).getTime() -
-                new Date(b.expiryDate).getTime()
+                new Date(a.maxRentalTime).getTime() -
+                new Date(b.maxRentalTime).getTime()
               );
             case "price":
-              return a.rentPrice - b.rentPrice;
+              return a.price - b.price;
             default:
               return 0;
           }
@@ -234,7 +242,6 @@ export default function RegisteredDomains() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Domain Name</TableHead>
-                      <TableHead>Registration Date</TableHead>
                       <TableHead>Expiry</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Current Renter</TableHead>
@@ -246,53 +253,60 @@ export default function RegisteredDomains() {
                     {filteredDomains.map((domain) => (
                       <TableRow key={domain.id}>
                         <TableCell className="font-medium">
-                          {domain.domain}
-                        </TableCell>
-                        <TableCell>
-                          {formatDate(domain.registrationDate)}
+                          {domain.name}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Timer className="h-4 w-4 text-gray-500" />
-                            <span>{formatDate(domain.expiryDate)}</span>
-                            <span className="text-xs text-gray-500">
-                              ({getTimeUntilExpiry(domain.expiryDate)} days
-                              left)
-                            </span>
+                            {domain.maxRentalTime ? (
+                              <>
+                                <span>
+                                  {new Date(
+                                    parseInt(domain.maxRentalTime) * 1000
+                                  ).toLocaleDateString()}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  ({getTimeUntilExpiry(domain.maxRentalTime)}{" "}
+                                  days left)
+                                </span>
+                              </>
+                            ) : (
+                              <span>N/A</span>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <span
                             className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
-                              domain.rentalStatus
+                              domain.status
                             )}`}
                           >
-                            {domain.rentalStatus.charAt(0).toUpperCase() +
-                              domain.rentalStatus.slice(1)}
+                            {domain.status.charAt(0).toUpperCase() +
+                              domain.status.slice(1)}
                           </span>
                         </TableCell>
-                        <TableCell>{domain.currentRenter || "-"}</TableCell>
+                        <TableCell>{domain.borrower || "-"}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Tag className="h-4 w-4 text-gray-500" />
-                            {domain.rentPrice} ETH
+                            {formatEther(BigInt(domain.price))} ETH
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            {domain.rentalStatus === "available" && (
+                            {domain.status === "available" && (
                               <Button
                                 size="sm"
                                 className="w-28"
                                 variant="outline"
                                 onClick={() =>
-                                  router.push(`/lend?domain=${domain.domain}`)
+                                  router.push(`/lend?domain=${domain.name}`)
                                 }
                               >
                                 List for Rent
                               </Button>
                             )}
-                            {domain.rentalStatus === "listed" && (
+                            {domain.status === "listed" && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -300,20 +314,20 @@ export default function RegisteredDomains() {
                                 onClick={() =>
                                   setUnlistDomain({
                                     id: domain.id,
-                                    domain: domain.domain,
+                                    name: domain.name,
                                   })
                                 }
                               >
                                 Unlist
                               </Button>
                             )}
-                            {domain.rentalStatus === "rented" && (
+                            {domain.status === "rented" && (
                               <Button
                                 size="sm"
                                 variant="outline"
                                 className="w-28"
                                 onClick={() =>
-                                  router.push(`/manage/${domain.domain}`)
+                                  router.push(`/manage/${domain.name}`)
                                 }
                               >
                                 View Details
@@ -336,7 +350,7 @@ export default function RegisteredDomains() {
           <DialogHeader>
             <DialogTitle>Confirm Unlist</DialogTitle>
             <DialogDescription>
-              Are you sure you want to unlist {unlistDomain?.domain}? This will
+              Are you sure you want to unlist {unlistDomain?.name}? This will
               remove it from the rental marketplace.
             </DialogDescription>
           </DialogHeader>
@@ -365,17 +379,9 @@ const getStatusColor = (status: string) => {
   }
 };
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-};
-
 const getTimeUntilExpiry = (expiryDate: string) => {
   const now = new Date();
-  const expiry = new Date(expiryDate);
+  const expiry = new Date(parseInt(expiryDate) * 1000);
   const daysLeft = Math.ceil(
     (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
   );

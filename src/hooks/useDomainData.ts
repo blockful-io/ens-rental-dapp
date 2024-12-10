@@ -2,24 +2,12 @@ import { useState, useEffect } from "react";
 import { ensRentGraphQL } from "@/src/wagmi";
 import { labelhash } from "viem";
 
-interface DomainListing {
-  id: string;
-  price: string;
-  lender: string;
-  rentalEnd: string;
-  name: string;
-  isWrapped: boolean;
-  createdAt: string;
-  available: boolean;
-  maxRentalTime: string;
-  node: string;
-  tokenId: string;
-}
+import { Domain } from "@/src/types";
 
 export default function useDomainData(
   domain: string | undefined
-): [DomainListing | null, boolean, string | null] {
-  const [listing, setListing] = useState<DomainListing | null>(null);
+): [Domain | null, boolean, string | null] {
+  const [listing, setListing] = useState<Domain | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,7 +56,7 @@ export default function useDomainData(
         if (!responseData || !responseData.data) {
           throw new Error("Invalid response data");
         }
-        const { data } = responseData as { data: { listing: DomainListing } };
+        const { data } = responseData as { data: { listing: Domain } };
 
         console.log("GraphQL Response:", data);
 
