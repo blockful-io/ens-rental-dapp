@@ -12,12 +12,13 @@ import {
   CardTitle,
 } from "@/src/components/ui/card";
 import { useAccount } from "wagmi";
-import { formatEther, labelhash, parseEther } from "viem";
+import { formatEther, labelhash } from "viem";
 import { createWalletClient, custom, publicActions } from "viem";
 import { ensRentAddress } from "@/src/wagmi";
 import ensRentABI from "@/abis/ensrent.json";
 import { config } from "@/src/wagmi";
 import useDomainData from "@/src/hooks/useDomainData";
+import { useUnlistDomain } from "@/src/hooks/useUnlistDomain";
 
 export default function DomainBuy() {
   const router = useRouter();
@@ -37,6 +38,8 @@ export default function DomainBuy() {
   const pricePerYear = pricePerSecond * BigInt(31536000); // 365 days in seconds
   console.log("pricePerSecond", pricePerSecond);
   const totalPrice = pricePerSecond * BigInt(duration);
+
+  const { unlistDomain, isUnlisting } = useUnlistDomain();
 
   useEffect(() => {
     if (listing && connectedAccount) {
@@ -80,16 +83,16 @@ export default function DomainBuy() {
       });
 
       return;
-      // return router.push("/");
     } catch (err) {
       console.error("Error renting domain:", err);
-      // Handle error (e.g., show an error message to the user)
     }
   };
 
-  const handleCloseRental = () => {
-    console.log("Closing rental");
-    // Implement the logic to close the rental
+  const handleCloseRental = async () => {
+    if (!domain || !connectedAccount) return;
+
+    const success = await unlistDomain(connectedAccount, domain as string);
+    if (success) router.push("/manage");
   };
 
   if (isLoading) {
@@ -280,8 +283,9 @@ export default function DomainBuy() {
                       size="lg"
                       className="w-full"
                       onClick={handleCloseRental}
+                      disabled={isUnlisting}
                     >
-                      Unlist Domain
+                      {isUnlisting ? "Unlisting..." : "Unlist Domain"}
                     </Button>
                   )}
                 </>

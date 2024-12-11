@@ -34,23 +34,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/src/components/ui/dialog";
-import useDomainsByAddress from "@/src/hooks/useDomains";
+import { formatEther, labelhash, namehash } from "viem";
 import { useAccount } from "wagmi";
+
+import useDomainsByAddress from "@/src/hooks/useDomains";
 import { Domain, RentalStatus } from "@/src/types";
 import useListings from "@/src/hooks/useListings";
-import {
-  createWalletClient,
-  custom,
-  formatEther,
-  labelhash,
-  namehash,
-  publicActions,
-} from "viem";
-
-import ensRentABI from "@/abis/ensrent.json";
+import { useUnlistDomain } from "@/src/hooks/useUnlistDomain";
 import { getStatusColor } from "@/src/utils";
-import { ensRentAddress } from "@/src/wagmi";
-import { config } from "@/src/wagmi";
 
 export default function RegisteredDomains() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -75,6 +66,8 @@ export default function RegisteredDomains() {
   const [availableNames, isLoadingAvailables, error] =
     useDomainsByAddress(address);
   const [filteredDomains, setFilteredDomains] = useState<Domain[]>([]);
+
+  const { unlistDomain: unlistDomainFn, isUnlisting } = useUnlistDomain();
 
   useEffect(() => {
     async function getDomains() {
@@ -113,35 +106,18 @@ export default function RegisteredDomains() {
   }, [sortBy]);
 
   const handleUnlist = async () => {
-    if (!unlistDomain) return;
+    if (!unlistDomain || !address) return;
 
     setIsLoading(true);
-    try {
-      const walletClient = createWalletClient({
-        account: address,
-        transport: custom(window.ethereum),
-        chain: config.chains[0],
-      }).extend(publicActions);
-
-      const tokenId = BigInt(labelhash(unlistDomain.name.replace(".eth", "")));
-
-      const hash = await walletClient.writeContract({
-        address: ensRentAddress,
-        abi: ensRentABI,
-        functionName: "reclaimDomain",
-        args: [tokenId],
-        account: address,
-      });
-
-      await walletClient.waitForTransactionReceipt({ hash });
-    } catch (err) {
-      console.error("Error unlisting domain:", err);
-    } finally {
-      setIsLoading(false);
+    const success = await unlistDomainFn(address, unlistDomain.name);
+    if (success) {
+      setUnlistDomain(null);
+      router.reload();
     }
+    setIsLoading(false);
   };
 
-  if (isLoadingAvailables || isLoadingListings || isLoading) {
+  if (isLoadingAvailables || isLoadingListings || isLoading || isUnlisting) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 flex items-center justify-center">
         <Card className="w-full max-w-md">
