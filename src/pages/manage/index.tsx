@@ -49,18 +49,15 @@ export default function RegisteredDomains() {
   const [filteredStatus, setFilteredStatus] = useState<RentalStatus | "all">(
     RentalStatus.rentedOut
   );
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [unlistDomain, setUnlistDomain] = useState<Pick<
     Domain,
     "id" | "name"
   > | null>(null);
+  const router = useRouter();
   const { address } = useAccount();
-
-  if (!address) return <div>Loading...</div>;
-
   const [listings, rentalIns, rentalOuts, isLoadingListings] = useListings({
-    lender: address,
+    lender: address || "",
   });
 
   const [availableNames, isLoadingAvailables, error] =

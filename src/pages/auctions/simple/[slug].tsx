@@ -32,12 +32,10 @@ export default function DomainBuy() {
     (new Date(selectedEndDate).getTime() - new Date().getTime()) / 1000 // difference between selected end date and now in seconds
   );
 
-  const isActive = true;
-
   const pricePerSecond = BigInt(listing?.price || 0);
   const pricePerYear = pricePerSecond * BigInt(31536000); // 365 days in seconds
   console.log("pricePerSecond", pricePerSecond);
-  const totalPrice = pricePerSecond * BigInt(duration);
+  const totalPrice = pricePerSecond * BigInt(duration || 0);
 
   const { unlistDomain, isUnlisting } = useUnlistDomain();
 
@@ -184,111 +182,95 @@ export default function DomainBuy() {
         <Card className="p-6">
           <div className="grid grid-cols-1 gap-8">
             <div className="space-y-6">
-              {!isActive ? (
-                <Alert variant="destructive">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                  <div className="flex items-center gap-2">
+                    <Tag className="size-5 text-blue-500" />
+                    <span className="text-lg font-medium">Price per Year</span>
+                  </div>
+                  <span className="text-2xl font-bold">
+                    {formatEther(pricePerYear)} ETH
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                  <div className="flex items-center gap-2">
+                    <Tag className="size-5 text-blue-500" />
+                    <span className="text-lg font-medium">
+                      Price per Second
+                    </span>
+                  </div>
+                  <span className="text-2xl font-bold">
+                    {formatEther(pricePerSecond)} ETH
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                  <div className="flex items-center gap-2">
+                    <Tag className="size-5 text-blue-500" />
+                    <span className="text-lg font-medium">Total Price</span>
+                  </div>
+                  <span className="text-2xl font-bold">
+                    {formatEther(BigInt(totalPrice))} ETH
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                  <div className="flex items-center gap-2">
+                    <Clock className="size-5 text-blue-500" />
+                    <span className="text-lg font-medium">End Date</span>
+                  </div>
+                  {isSeller ? (
+                    <p>
+                      <input
+                        type="date"
+                        value={selectedEndDate.toISOString().split("T")[0]}
+                        className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        disabled
+                      />
+                    </p>
+                  ) : (
+                    <input
+                      type="date"
+                      value={selectedEndDate.toISOString().split("T")[0]}
+                      min={minDate}
+                      max={maxDate.toISOString().split("T")[0]}
+                      onChange={handleDateChange}
+                      className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                    />
+                  )}
+                </div>
+              </div>
+
+              {!isSeller && (
+                <Alert className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
                   <AlertCircle className="size-4" />
-                  <AlertTitle>Domain Not Available</AlertTitle>
+                  <AlertTitle>First Come, First Served</AlertTitle>
                   <AlertDescription>
-                    This domain is not currently available for rent. Please
-                    check other available domains.
+                    This domain is available for immediate rental. The first
+                    person to complete the transaction will receive the domain.
                   </AlertDescription>
                 </Alert>
+              )}
+
+              {!isSeller ? (
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={handleBuy}
+                  disabled={!selectedEndDate}
+                >
+                  Rent Now for {formatEther(totalPrice)} ETH
+                </Button>
               ) : (
-                <>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-                      <div className="flex items-center gap-2">
-                        <Tag className="size-5 text-blue-500" />
-                        <span className="text-lg font-medium">
-                          Price per Year
-                        </span>
-                      </div>
-                      <span className="text-2xl font-bold">
-                        {formatEther(pricePerYear)} ETH
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-                      <div className="flex items-center gap-2">
-                        <Tag className="size-5 text-blue-500" />
-                        <span className="text-lg font-medium">
-                          Price per Second
-                        </span>
-                      </div>
-                      <span className="text-2xl font-bold">
-                        {formatEther(pricePerSecond)} ETH
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-                      <div className="flex items-center gap-2">
-                        <Tag className="size-5 text-blue-500" />
-                        <span className="text-lg font-medium">Total Price</span>
-                      </div>
-                      <span className="text-2xl font-bold">
-                        {formatEther(BigInt(totalPrice))} ETH
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-                      <div className="flex items-center gap-2">
-                        <Clock className="size-5 text-blue-500" />
-                        <span className="text-lg font-medium">End Date</span>
-                      </div>
-                      {isSeller ? (
-                        <p>
-                          <input
-                            type="date"
-                            value={selectedEndDate.toISOString().split("T")[0]}
-                            className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            disabled
-                          />
-                        </p>
-                      ) : (
-                        <input
-                          type="date"
-                          value={selectedEndDate.toISOString().split("T")[0]}
-                          min={minDate}
-                          max={maxDate.toISOString().split("T")[0]}
-                          onChange={handleDateChange}
-                          className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        />
-                      )}
-                    </div>
-                  </div>
-
-                  {!isSeller && (
-                    <Alert className="bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
-                      <AlertCircle className="size-4" />
-                      <AlertTitle>First Come, First Served</AlertTitle>
-                      <AlertDescription>
-                        This domain is available for immediate rental. The first
-                        person to complete the transaction will receive the
-                        domain.
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {!isSeller ? (
-                    <Button
-                      size="lg"
-                      className="w-full"
-                      onClick={handleBuy}
-                      disabled={!selectedEndDate}
-                    >
-                      Rent Now for {formatEther(totalPrice)} ETH
-                    </Button>
-                  ) : (
-                    <Button
-                      size="lg"
-                      className="w-full"
-                      onClick={handleCloseRental}
-                      disabled={isUnlisting}
-                    >
-                      {isUnlisting ? "Unlisting..." : "Unlist Domain"}
-                    </Button>
-                  )}
-                </>
+                <Button
+                  size="lg"
+                  className="w-full"
+                  onClick={handleCloseRental}
+                  disabled={isUnlisting}
+                >
+                  {isUnlisting ? "Unlisting..." : "Unlist Domain"}
+                </Button>
               )}
 
               {!isSeller && (
