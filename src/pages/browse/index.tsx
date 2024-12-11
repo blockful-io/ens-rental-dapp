@@ -101,7 +101,6 @@ export default function Component() {
         </TableHeader>
         <TableBody>
           {filteredDomains.map((domain) => {
-            console.log(domain);
             return (
               <TableRow key={domain.id}>
                 <TableCell className="font-medium">{domain.name}</TableCell>
