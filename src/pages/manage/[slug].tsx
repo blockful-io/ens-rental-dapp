@@ -8,14 +8,6 @@ import {
   CardTitle,
 } from "@/src/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/src/components/ui/table";
-import {
   ArrowLeft,
   Calendar,
   User,
@@ -25,10 +17,11 @@ import {
   Loader2,
 } from "lucide-react";
 import { useRouter } from "next/router";
-import { usePublicClient, useAccount } from "wagmi";
+import { usePublicClient } from "wagmi";
 import { formatEther } from "viem";
 
 import useDomainData from "@/src/hooks/useDomainData";
+import { getStatusColor } from "@/src/utils";
 
 export default function RentedDomainDetails() {
   const router = useRouter();
@@ -39,15 +32,33 @@ export default function RentedDomainDetails() {
 
   if (isLoading || !rental) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-100 to-white dark:from-gray-900 dark:to-gray-800">
-        <div className="text-center">
-          <Loader2 className="mx-auto size-12 animate-spin text-blue-500 dark:text-blue-400" />
-          <h2 className="mt-4 text-xl font-semibold dark:text-white">
-            Loading...
-          </h2>
-          <p className="mt-2 text-sm text-muted-foreground dark:text-gray-300">
-            Please wait while we prepare your content
-          </p>
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
+        <div className="container mx-auto py-8 max-w-4xl space-y-6">
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2"
+            onClick={() => router.back()}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </Button>
+
+          <Card>
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-2xl">Loading...</CardTitle>
+                  <CardDescription>Rental Details</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center py-8">
+              <Loader2 className="size-12 animate-spin text-blue-500 dark:text-blue-400" />
+              <p className="mt-4 text-sm text-muted-foreground dark:text-gray-300">
+                Please wait while we prepare your content
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -74,8 +85,9 @@ export default function RentedDomainDetails() {
                 <CardDescription>Rental Details</CardDescription>
               </div>
               <div
-                className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium
-                bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
+                className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
+                  rental.status
+                )}`}
               >
                 {rental.status}
               </div>

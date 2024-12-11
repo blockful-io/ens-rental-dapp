@@ -39,6 +39,7 @@ import { useAccount } from "wagmi";
 import { Domain, RentalStatus } from "@/src/types";
 import useListings from "@/src/hooks/useListings";
 import { formatEther, labelhash, namehash } from "viem";
+import { getStatusColor } from "@/src/utils";
 
 export default function RegisteredDomains() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -375,21 +376,6 @@ export default function RegisteredDomains() {
     </div>
   );
 }
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case RentalStatus.available:
-      return "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400";
-    case RentalStatus.rentedOut:
-      return "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400";
-    case RentalStatus.rentedIn:
-      return "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400";
-    case RentalStatus.listed:
-      return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400";
-    default:
-      return "bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400";
-  }
-};
 
 const getTimeUntilExpiry = (expiryDate: string) => {
   const now = new Date();

@@ -3,6 +3,7 @@ import { ensRentGraphQL } from "@/src/wagmi";
 import { labelhash } from "viem";
 
 import { Domain, RentalStatus } from "@/src/types";
+import { useAccount } from "wagmi";
 
 export default function useDomainData(
   domain: string
@@ -10,14 +11,13 @@ export default function useDomainData(
   const [listing, setListing] = useState<Domain | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { address } = useAccount();
 
   useEffect(() => {
     const fetchListings = async () => {
       setIsLoading(true);
 
       if (!domain) return;
-
-      const tokenId = BigInt(labelhash(domain.replace(".eth", ""))).toString()
 
       try {
         const response = await fetch(ensRentGraphQL, {
@@ -49,13 +49,12 @@ export default function useDomainData(
               }
             `,
             variables: {
-              tokenId
+              tokenId: BigInt(labelhash(domain.replace(".eth", ""))).toString()
             },
           }),
         });
 
         const responseData = await response.json();
-        console.debug("Full server response:", responseData);
 
         if (responseData.errors) {
           throw new Error(`GraphQL Error: ${responseData.errors[0].message}`);
@@ -69,6 +68,7 @@ export default function useDomainData(
 
         if (!_listing) {
           setError("Listings not found");
+          return
         }
 
         const mostRecentRental = _listing.rentals?.items[0];
@@ -80,9 +80,11 @@ export default function useDomainData(
         const rentalExpiry = mostRecentRental?.endTime ? parseInt(mostRecentRental.endTime) : 0;
 
         let status = RentalStatus.available;
-        if (rentalExpiry > now) {
+        if (_listing.lender === address && rentalExpiry > now) {
           status = RentalStatus.rentedOut;
-        } else if (_listing.available) {
+        } else if (mostRecentRental?.borrower === address && rentalExpiry > now) {
+          status = RentalStatus.rentedIn;
+        } else {
           status = RentalStatus.listed;
         }
 
