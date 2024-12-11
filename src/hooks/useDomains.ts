@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { usePublicClient } from "wagmi";
 
 export default function useDomainsByAddress(
-  address: Address | undefined,
+  address: Address | undefined
 ): [string[], boolean, Error | null] {
   const [names, setNames] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,7 +21,13 @@ export default function useDomainsByAddress(
         const result = await getNamesForAddress(publicClient, {
           address: address,
         });
-        setNames(result.map((object) => object.name!));
+
+        const filteredResult = result.filter(
+          (domain) =>
+            domain.owner === address || domain.wrappedOwner === address
+        );
+
+        setNames(filteredResult.map((object) => object.name!));
       } catch (error) {
         setError(new Error("An error occurred fetching domains"));
       } finally {
