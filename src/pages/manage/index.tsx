@@ -38,7 +38,7 @@ import useDomainsByAddress from "@/src/hooks/useDomains";
 import { useAccount } from "wagmi";
 import { Domain, RentalStatus } from "@/src/types";
 import useListings from "@/src/hooks/useListings";
-import { formatEther } from "viem";
+import { formatEther, labelhash, namehash } from "viem";
 
 export default function RegisteredDomains() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -70,16 +70,11 @@ export default function RegisteredDomains() {
           (name: string, i: number): Domain => ({
             id: i.toString(),
             name,
-            available: false,
             status: RentalStatus.available,
-            maxRentalTime: "",
-            price: 0,
-            lender: "",
+            lender: address!,
             createdAt: "",
-            isWrapped: false,
-            node: "",
-            tokenId: "",
-            borrower: "",
+            node: namehash(name),
+            tokenId: Number(labelhash(name.replace(".eth", ""))).toString(),
           })
         ),
         ...listings,
@@ -290,7 +285,9 @@ export default function RegisteredDomains() {
                           </span>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {domain.borrower || "-"}
+                          {domain.rentals?.length
+                            ? domain.rentals[0].borrower
+                            : "-"}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">

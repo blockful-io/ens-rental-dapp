@@ -7,15 +7,20 @@ export enum RentalStatus {
 
 export interface Domain {
   id: string;
-  price: number;
+  price?: number;
   lender: string;
-  borrower: string;
   name: string;
-  isWrapped: boolean;
+  isWrapped?: boolean;
   createdAt: string;
-  available: boolean;
-  maxRentalTime: string;
+  maxRentalTime?: string;
   node: string;
   tokenId: string;
   status: RentalStatus;
+  hasActiveRental?: boolean;
+  rentals?: {
+    startTime: number;
+    endTime: number;
+    borrower: string;
+    price: number;
+  }[];
 }
