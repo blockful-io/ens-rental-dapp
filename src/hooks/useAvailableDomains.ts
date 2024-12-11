@@ -48,7 +48,6 @@ export default function useAvailableDomains(): [
                         borrower
                       }
                     }
-                    available
                     createdAt
                     id
                     isWrapped
@@ -90,7 +89,6 @@ export default function useAvailableDomains(): [
                 id: listing.id,
                 maxRentalTime: listing.maxRentalTime,
                 createdAt: listing.createdAt,
-                available: listing.available,
                 isWrapped: listing.isWrapped,
                 lender: listing.lender,
                 node: listing.node,

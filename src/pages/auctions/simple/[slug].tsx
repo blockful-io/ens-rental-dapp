@@ -175,9 +175,6 @@ export default function DomainBuy() {
           <h1 className="mb-2 text-3xl font-bold text-gray-800 dark:text-white">
             {domain}
           </h1>
-          {/* <p className="text-gray-500 dark:text-gray-400">
-            {listing.active ? "Available for Rent" : "Not Available"}
-          </p> */}
         </div>
 
         {/* Main info card */}
