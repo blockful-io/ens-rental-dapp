@@ -34,11 +34,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/src/components/ui/dialog";
-import useDomainsByAddress from "@/src/hooks/useDomains";
+import { formatEther, labelhash, namehash } from "viem";
 import { useAccount } from "wagmi";
+
+import useDomainsByAddress from "@/src/hooks/useDomains";
 import { Domain, RentalStatus } from "@/src/types";
 import useListings from "@/src/hooks/useListings";
-import { formatEther, labelhash, namehash } from "viem";
+import { useUnlistDomain } from "@/src/hooks/useUnlistDomain";
 import { getStatusColor } from "@/src/utils";
 
 export default function RegisteredDomains() {
@@ -47,23 +49,22 @@ export default function RegisteredDomains() {
   const [filteredStatus, setFilteredStatus] = useState<RentalStatus | "all">(
     RentalStatus.rentedOut
   );
-  const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [unlistDomain, setUnlistDomain] = useState<Pick<
     Domain,
     "id" | "name"
   > | null>(null);
+  const router = useRouter();
   const { address } = useAccount();
-
-  if (!address) return <div>Loading...</div>;
-
   const [listings, rentalIns, rentalOuts, isLoadingListings] = useListings({
-    lender: address,
+    lender: address || "",
   });
 
   const [availableNames, isLoadingAvailables, error] =
     useDomainsByAddress(address);
   const [filteredDomains, setFilteredDomains] = useState<Domain[]>([]);
+
+  const { unlistDomain: unlistDomainFn, isUnlisting } = useUnlistDomain();
 
   useEffect(() => {
     async function getDomains() {
@@ -101,9 +102,19 @@ export default function RegisteredDomains() {
     setFilteredDomains((prevDomains) => sortDomains(prevDomains, sortBy));
   }, [sortBy]);
 
-  const handleUnlist = () => unlistDomain && setUnlistDomain(null);
+  const handleUnlist = async () => {
+    if (!unlistDomain || !address) return;
 
-  if (isLoadingAvailables || isLoadingListings || isLoading) {
+    setIsLoading(true);
+    const success = await unlistDomainFn(address, unlistDomain.name);
+    if (success) {
+      setUnlistDomain(null);
+      router.reload();
+    }
+    setIsLoading(false);
+  };
+
+  if (isLoadingAvailables || isLoadingListings || isLoading || isUnlisting) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 flex items-center justify-center">
         <Card className="w-full max-w-md">

@@ -12,6 +12,7 @@ export default function useListings({ lender }: { lender: string }): [Domain[], 
 
   useEffect(() => {
     const fetchListings = async () => {
+      if (!lender) return;
       setIsLoading(true);
 
       const response = await fetch(ensRentGraphQL, {
