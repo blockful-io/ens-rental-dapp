@@ -33,11 +33,9 @@ export default function useListings({ lender }: { lender: string }): [Domain[], 
                     node
                     price
                     tokenId
-                    rentals {
+                    rentals(where: {endTime_gte: "${Math.floor(Date.now() / 1000)}"}) {
                       items {
                         borrower
-                        endTime
-                        startTime
                       }
                     }
                   }
@@ -91,7 +89,6 @@ export default function useListings({ lender }: { lender: string }): [Domain[], 
       });
 
       const responseData = await response.json();
-      console.debug({ responseData });
 
       if (responseData.errors) {
         throw new Error(`GraphQL Error: ${responseData.errors[0].message}`);
@@ -101,7 +98,7 @@ export default function useListings({ lender }: { lender: string }): [Domain[], 
         throw new Error("Invalid response data");
       }
 
-      setListings(responseData.data.listings.items.map((l: Domain) => ({
+      setListings(responseData.data.listings.items.filter((l: any) => l.rentals?.items?.length === 0).map((l: Domain) => ({
         ...l,
         name: l.name.endsWith(".eth") ? l.name : `${l.name}.eth`,
         status: RentalStatus.listed,

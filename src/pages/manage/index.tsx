@@ -85,33 +85,21 @@ export default function RegisteredDomains() {
         ...listings,
         ...rentalIns,
         ...rentalOuts,
-      ]
-        .filter(
-          (domain) =>
-            domain.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-            (filteredStatus === "all" || domain.status === filteredStatus)
-        )
-        .sort((a, b) => {
-          switch (sortBy) {
-            case "name":
-              return a.name.localeCompare(b.name);
-            case "expiry":
-              return (
-                new Date(a.maxRentalTime).getTime() -
-                new Date(b.maxRentalTime).getTime()
-              );
-            case "price":
-              return a.price - b.price;
-            default:
-              return 0;
-          }
-        });
+      ].filter(
+        (domain) =>
+          domain.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+          (filteredStatus === "all" || domain.status === filteredStatus)
+      );
 
-      setFilteredDomains(filteredDomains);
+      setFilteredDomains(sortDomains(filteredDomains, sortBy));
     }
 
     getDomains();
   }, [availableNames, filteredStatus]);
+
+  useEffect(() => {
+    setFilteredDomains((prevDomains) => sortDomains(prevDomains, sortBy));
+  }, [sortBy]);
 
   const handleUnlist = () => unlistDomain && setUnlistDomain(null);
 
@@ -258,7 +246,9 @@ export default function RegisteredDomains() {
                       <TableHead>Domain Name</TableHead>
                       <TableHead>Expiry</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Current Renter</TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        Current Renter
+                      </TableHead>
                       <TableHead>Rental Price</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -273,7 +263,7 @@ export default function RegisteredDomains() {
                           <div className="flex items-center gap-2">
                             <Timer className="h-4 w-4 text-gray-500" />
                             {domain.maxRentalTime ? (
-                              <>
+                              <div className="flex flex-col">
                                 <span>
                                   {new Date(
                                     parseInt(domain.maxRentalTime) * 1000
@@ -283,7 +273,7 @@ export default function RegisteredDomains() {
                                   ({getTimeUntilExpiry(domain.maxRentalTime)}{" "}
                                   days left)
                                 </span>
-                              </>
+                              </div>
                             ) : (
                               <span>N/A</span>
                             )}
@@ -299,11 +289,15 @@ export default function RegisteredDomains() {
                               domain.status.slice(1)}
                           </span>
                         </TableCell>
-                        <TableCell>{domain.borrower || "-"}</TableCell>
+                        <TableCell className="hidden md:table-cell">
+                          {domain.borrower || "-"}
+                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Tag className="h-4 w-4 text-gray-500" />
-                            {formatEther(BigInt(domain.price))} ETH
+                            {domain.price
+                              ? `${formatEther(BigInt(domain.price))} ETH`
+                              : "-"}
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
@@ -403,4 +397,26 @@ const getTimeUntilExpiry = (expiryDate: string) => {
     (expiry.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
   );
   return daysLeft;
+};
+
+const sortDomains = (domains: Domain[], sortBy: string) => {
+  return [...domains].sort((a, b) => {
+    switch (sortBy) {
+      case "name":
+        return a.name.localeCompare(b.name);
+      case "expiry":
+        if (!a.maxRentalTime) return 1;
+        if (!b.maxRentalTime) return -1;
+        return (
+          new Date(a.maxRentalTime).getTime() -
+          new Date(b.maxRentalTime).getTime()
+        );
+      case "price":
+        if (!a.price) return 1;
+        if (!b.price) return -1;
+        return a.price - b.price;
+      default:
+        return 0;
+    }
+  });
 };
