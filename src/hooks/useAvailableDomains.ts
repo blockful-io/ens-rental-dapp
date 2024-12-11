@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ensRentGraphQL } from "@/src/wagmi";
 import { formatEther } from "viem";
+import { CONFIG_FILES } from "next/dist/shared/lib/constants";
 
 interface AvailableDomain {
   id: string;
@@ -39,8 +40,14 @@ export default function useAvailableDomains(): [
           body: JSON.stringify({
             query: `
               {
-                listings(where: {available: true}) {
+                listings(where: {}) {
                   items {
+                    rentals {
+                      items {
+                        endTime
+                        borrower
+                      }
+                    }
                     available
                     createdAt
                     id
@@ -59,7 +66,6 @@ export default function useAvailableDomains(): [
         });
 
         const responseData = await response.json();
-        console.log("GraphQL Response:", responseData);
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -72,7 +78,6 @@ export default function useAvailableDomains(): [
         const { data } = responseData;
 
         if (data?.listings?.items) {
-          console.log("data.listings.items", data.listings.items);
           const availableDomains = data.listings.items
             // .filter((listing: any) => listing.active)
             .map((listing: any, index: number) => {
@@ -92,9 +97,16 @@ export default function useAvailableDomains(): [
                 name: `${listing.name}.eth`,
                 price: priceInEth,
                 tokenId: listing.tokenId,
+                rentals: listing.rentals,
               };
             });
-          setDomains(availableDomains);
+
+          const filteredDomains = availableDomains.filter((domain: any) => {
+            const lastRentEndTime = domain?.rentals?.items[0]?.endTime;
+            return !lastRentEndTime || lastRentEndTime < Date.now() / 1000;
+          });
+
+          setDomains(filteredDomains);
         }
       } catch (err) {
         console.error("Error fetching listings:", err);
