@@ -39,6 +39,7 @@ export default function useDomainData(
                   tokenId
                   rentals {
                     items { 
+                      id
                       startTime
                       price
                       endTime
@@ -93,6 +94,7 @@ export default function useDomainData(
           status,
           hasActiveRental,
           rentals: _listing.rentals.items.map((rental: any) => ({
+            id: rental.id,
             borrower: rental.borrower,
             startTime: parseInt(rental.startTime) * 1000,
             endTime: parseInt(rental.endTime) * 1000,

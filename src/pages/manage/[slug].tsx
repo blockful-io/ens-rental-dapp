@@ -22,6 +22,7 @@ import { formatEther } from "viem";
 
 import useDomainData from "@/src/hooks/useDomainData";
 import { getStatusColor } from "@/src/utils";
+import { RentalStatus } from "@/src/types";
 
 export default function RentedDomainDetails() {
   const router = useRouter();
@@ -210,7 +211,11 @@ export default function RentedDomainDetails() {
               onClick={() => {
                 window.open(
                   `${client!.chain!.blockExplorers!.default.url}/tx/${
-                    rental.id
+                    (rental.status === RentalStatus.rentedOut ||
+                      rental.status === RentalStatus.rentedIn) &&
+                    rental.rentals?.length
+                      ? rental.rentals![0].id
+                      : rental.id
                   }`,
                   "_blank"
                 );
@@ -238,8 +243,6 @@ const formatDate = (date: number): string => {
 };
 
 const getRemainingTime = (endDate: string) => {
-  console.log({ endDate });
-
   const now = new Date();
   const end = new Date(parseInt(endDate) * 1000);
   const diff = end.getTime() - now.getTime();
