@@ -34,12 +34,7 @@ export default function DomainBuy() {
   const isActive = true;
 
   const pricePerSecond = BigInt(listing?.price || 0);
-  console.log("pricePerSecond", pricePerSecond);
   const totalPrice = pricePerSecond * BigInt(duration);
-
-  console.log("pricePerSecond", pricePerSecond);
-  console.log("totalPrice", totalPrice);
-  console.log("duration", duration);
 
   useEffect(() => {
     if (listing && connectedAccount) {
@@ -59,8 +54,6 @@ export default function DomainBuy() {
 
   const handleBuy = async () => {
     if (!listing || !domain || !selectedEndDate) return;
-
-    console.log("pricePerSecond", pricePerSecond);
 
     try {
       const walletClient = createWalletClient({

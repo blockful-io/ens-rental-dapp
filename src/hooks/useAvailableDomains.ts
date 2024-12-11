@@ -72,7 +72,6 @@ export default function useAvailableDomains(): [
         const { data } = responseData;
 
         if (data?.listings?.items) {
-          console.log("data.listings.items", data.listings.items);
           const availableDomains = data.listings.items
             // .filter((listing: any) => listing.active)
             .map((listing: any, index: number) => {
