@@ -34,6 +34,7 @@ export default function DomainBuy() {
   const isActive = true;
 
   const pricePerSecond = BigInt(listing?.price || 0);
+  const pricePerYear = pricePerSecond * BigInt(31536000); // 365 days in seconds
   console.log("pricePerSecond", pricePerSecond);
   const totalPrice = pricePerSecond * BigInt(duration);
 
@@ -204,7 +205,19 @@ export default function DomainBuy() {
                     <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
                       <div className="flex items-center gap-2">
                         <Tag className="size-5 text-blue-500" />
-                        <span className="text-lg font-medium">Price</span>
+                        <span className="text-lg font-medium">
+                          Price per Year
+                        </span>
+                      </div>
+                      <span className="text-2xl font-bold">
+                        {formatEther(pricePerYear)} ETH
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                      <div className="flex items-center gap-2">
+                        <Tag className="size-5 text-blue-500" />
+                        <span className="text-lg font-medium">Total Price</span>
                       </div>
                       <span className="text-2xl font-bold">
                         {formatEther(BigInt(totalPrice))} ETH
