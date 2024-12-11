@@ -167,7 +167,7 @@ export default function Component() {
       const tokenId = BigInt(labelhash(name));
 
       const pricePerSecond =
-        parseEther(startingPrice.toString()) / BigInt(duration);
+        parseEther(startingPrice.toString()) / BigInt(ONE_YEAR_IN_SECONDS);
       const maxEndTimestamp = BigInt(Math.floor(Date.now() / 1000) + duration);
 
       setCheckYourWallet(true);
@@ -175,7 +175,7 @@ export default function Component() {
         address: ensRentAddress,
         abi: ensRentABI,
         functionName: "listDomain",
-        args: [tokenId, 1, maxEndTimestamp, node, name],
+        args: [tokenId, pricePerSecond, maxEndTimestamp, node, name],
         account: address,
       });
 
@@ -280,7 +280,7 @@ export default function Component() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="startingPrice">Starting Price (ETH)</Label>
+                <Label htmlFor="startingPrice">Price per year (ETH)</Label>
                 <Input
                   id="startingPrice"
                   type="number"
