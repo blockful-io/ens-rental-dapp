@@ -22,7 +22,7 @@ const Home: NextPage = () => {
         {/* Welcome Section */}
         <div className="mb-12 text-center">
           <h1 className="mb-4 text-4xl font-bold dark:text-white">
-            Welcome to ENS Rental Hub
+            Welcome to ENS Rent
           </h1>
           <p className="mx-auto max-w-2xl text-lg text-muted-foreground dark:text-gray-300">
             Your platform for renting and listing ENS domains. Choose whether

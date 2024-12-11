@@ -9,7 +9,7 @@ export function SiteHeader() {
         <nav>
           <Link href="/" className="flex items-center space-x-2">
             {/* <Icons.logo className="size-6" /> */}
-            <span className="inline-block font-bold">ENS Rental HUB</span>
+            <span className="inline-block font-bold">ENS Rent</span>
           </Link>
         </nav>
         <div className="flex flex-1 items-center justify-end space-x-4">
@@ -29,10 +29,6 @@ export function SiteHeader() {
           </nav> */}
           <nav className="flex items-center space-x-1">
             <ConnectButton />
-            {/* <Button variant="outline" className="flex items-center space-x-2">
-              <Wallet className="size-4" /> */}
-            {/* <span>Connect Wallet</span> */}
-            {/* </Button> */}
           </nav>
         </div>
       </div>
