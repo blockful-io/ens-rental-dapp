@@ -58,7 +58,7 @@ export default function Component() {
           <TableRow className="bg-white text-black">
             <TableHead>Domain Name</TableHead>
             <TableHead>Price per year</TableHead>
-            <TableHead>Expiry Date</TableHead>
+            <TableHead>Maximum Rental Time</TableHead>
             <TableHead>Action</TableHead>
           </TableRow>
         </TableHeader>
@@ -88,7 +88,7 @@ export default function Component() {
                       router.push(`/auctions/simple/${domain.name}`)
                     }
                   >
-                    {domain.lender != address ? "Rent Now" : "Close Rental"}
+                    {domain.lender != address ? "Rent Now" : "Unlist Domain"}
                   </Button>
                 </TableCell>
               </TableRow>

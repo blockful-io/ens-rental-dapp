@@ -267,7 +267,7 @@ export default function DomainBuy() {
                       className="w-full"
                       onClick={handleCloseRental}
                     >
-                      Close rental
+                      Unlist Domain
                     </Button>
                   )}
                 </>
