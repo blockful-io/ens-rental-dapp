@@ -101,8 +101,6 @@ export default function Component() {
         args: [address, ensRentAddress],
       })) as boolean;
 
-      console.log(approvedForAll);
-
       setIsApproved(approvedForAll);
       return approvedForAll;
     } catch (error) {
@@ -114,10 +112,7 @@ export default function Component() {
   };
 
   useEffect(() => {
-    if (domain) {
-      console.log("checking approval");
-      checkApproval(domain);
-    }
+    if (domain) checkApproval(domain);
   }, [domain]);
 
   const approveDomain = async (domainToApprove: string) => {

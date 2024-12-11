@@ -34,12 +34,7 @@ export default function DomainBuy() {
   const isActive = true;
 
   const pricePerSecond = BigInt(listing?.price || 0);
-  console.log("pricePerSecond", pricePerSecond);
   const totalPrice = pricePerSecond * BigInt(duration);
-
-  console.log("pricePerSecond", pricePerSecond);
-  console.log("totalPrice", totalPrice);
-  console.log("duration", duration);
 
   useEffect(() => {
     if (listing && connectedAccount) {
@@ -59,8 +54,6 @@ export default function DomainBuy() {
 
   const handleBuy = async () => {
     if (!listing || !domain || !selectedEndDate) return;
-
-    console.log("pricePerSecond", pricePerSecond);
 
     try {
       const walletClient = createWalletClient({
@@ -159,7 +152,7 @@ export default function DomainBuy() {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const minDate = tomorrow.toISOString().split("T")[0];
 
-  const rentalEndDate = new Date(Number(listing.rentalEnd) * 1000);
+  const rentalEndDate = new Date(Number(listing.maxRentalTime) * 1000);
   const maxDate = new Date(Number(listing.maxRentalTime) * 1000);
 
   return (
@@ -216,14 +209,25 @@ export default function DomainBuy() {
                         <Clock className="size-5 text-blue-500" />
                         <span className="text-lg font-medium">End Date</span>
                       </div>
-                      <input
-                        type="date"
-                        value={selectedEndDate.toISOString().split("T")[0]}
-                        min={minDate}
-                        max={maxDate.toISOString().split("T")[0]}
-                        onChange={handleDateChange}
-                        className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      />
+                      {isSeller ? (
+                        <p>
+                          <input
+                            type="date"
+                            value={selectedEndDate.toISOString().split("T")[0]}
+                            className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                            disabled
+                          />
+                        </p>
+                      ) : (
+                        <input
+                          type="date"
+                          value={selectedEndDate.toISOString().split("T")[0]}
+                          min={minDate}
+                          max={maxDate.toISOString().split("T")[0]}
+                          onChange={handleDateChange}
+                          className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        />
+                      )}
                     </div>
                   </div>
 

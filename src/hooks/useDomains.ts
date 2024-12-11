@@ -20,14 +20,15 @@ export default function useDomainsByAddress(
       try {
         const result = await getNamesForAddress(publicClient, {
           address: address,
+          filter: {
+            registrant: true,
+            resolvedAddress: false,
+            owner: false,
+            wrappedOwner: true,
+          }
         });
 
-        const filteredResult = result.filter(
-          (domain) =>
-            domain.owner === address || domain.wrappedOwner === address
-        );
-
-        setNames(filteredResult.map((object) => object.name!));
+        setNames(result.map((object) => object.name!).filter((name) => name.split(".").length === 2));
       } catch (error) {
         setError(new Error("An error occurred fetching domains"));
       } finally {

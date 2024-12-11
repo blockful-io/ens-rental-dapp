@@ -100,38 +100,33 @@ export default function Component() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {filteredDomains.map((domain) => {
-            console.log(domain);
-            return (
-              <TableRow key={domain.id}>
-                <TableCell className="font-medium">{domain.name}</TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <TrendingDown className="w-4 h-4 text-green-500 mr-2" />
-                    {domain.price} ETH
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 text-blue-500 mr-2" />
-                    {new Date(
-                      Number(domain.maxRentalTime) * 1000
-                    ).toLocaleDateString("en-GB")}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    size="sm"
-                    onClick={() =>
-                      router.push(`/auctions/simple/${domain.name}`)
-                    }
-                  >
-                    Rent Now
-                  </Button>
-                </TableCell>
-              </TableRow>
-            );
-          })}
+          {filteredDomains.map((domain) => (
+            <TableRow key={domain.id}>
+              <TableCell className="font-medium">{domain.name}</TableCell>
+              <TableCell>
+                <div className="flex items-center">
+                  <TrendingDown className="w-4 h-4 text-green-500 mr-2" />
+                  {domain.price} ETH
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center">
+                  <Clock className="w-4 h-4 text-blue-500 mr-2" />
+                  {new Date(
+                    Number(domain.maxRentalTime) * 1000
+                  ).toLocaleDateString("en-GB")}
+                </div>
+              </TableCell>
+              <TableCell>
+                <Button
+                  size="sm"
+                  onClick={() => router.push(`/auctions/simple/${domain.name}`)}
+                >
+                  Rent Now
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>
