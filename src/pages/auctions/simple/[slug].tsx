@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { AlertCircle, ArrowLeft, Clock, Tag } from "lucide-react";
+import { AlertCircle, ArrowLeft, Clock, Tag, Wallet } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/src/components/ui/alert";
 import { Button } from "@/src/components/ui/button";
@@ -25,18 +25,25 @@ export default function DomainBuy() {
   const [isSeller, setIsSeller] = useState(false);
   const { slug: domain } = router.query;
   const [selectedEndDate, setSelectedEndDate] = useState(new Date());
+  const [isRenting, setIsRenting] = useState(false);
+  const [isCheckingWallet, setIsCheckingWallet] = useState(false);
+  const [isProcessingTx, setIsProcessingTx] = useState(false);
+  const [isRented, setIsRented] = useState(false);
 
   const [listing, isLoading, error] = useDomainData(domain as string);
   const [duration, setDuration] = useState(
     (new Date(selectedEndDate).getTime() - new Date().getTime()) / 1000 // difference between selected end date and now in seconds
   );
 
+  console.log(new Date(selectedEndDate).getTime(), new Date().getTime());
+
   const isActive = true;
+
+  console.log("duration in days", Math.floor(duration / (24 * 60 * 60)));
 
   const pricePerSecond = BigInt(listing?.price || 0);
   const pricePerYear = pricePerSecond * BigInt(31536000); // 365 days in seconds
-  console.log("pricePerSecond", pricePerSecond);
-  const totalPrice = pricePerSecond * BigInt(duration);
+  const totalPrice = pricePerSecond * BigInt(Math.max(0, duration));
 
   useEffect(() => {
     if (listing && connectedAccount) {
@@ -47,17 +54,19 @@ export default function DomainBuy() {
   }, [listing, connectedAccount]);
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedEndDate(new Date(e.target.value));
+    const newEndDate = new Date(e.target.value);
+    setSelectedEndDate(newEndDate);
     const start = new Date().getTime();
-    const end = new Date(e.target.value).getTime();
-    const newDuration = Math.floor((end - start) / 1000);
+    const end = newEndDate.getTime();
+    const newDuration = Math.ceil((end - start) / 1000 + 24 * 60 * 60);
     setDuration(newDuration);
   };
 
   const handleBuy = async () => {
-    if (!listing || !domain || !selectedEndDate) return;
+    if (!listing || !domain || !selectedEndDate || !connectedAccount) return;
 
     try {
+      setIsRenting(true);
       const walletClient = createWalletClient({
         account: connectedAccount,
         transport: custom(window.ethereum),
@@ -66,24 +75,34 @@ export default function DomainBuy() {
 
       const tokenId = BigInt(labelhash((domain as string).replace(".eth", "")));
       const desiredEndTimestamp = BigInt(
-        new Date(selectedEndDate).getTime() / 1000
+        Math.floor(new Date(selectedEndDate).getTime() / 1000)
       );
 
-      await walletClient.writeContract({
+      setIsCheckingWallet(true);
+
+      const { request } = await walletClient.simulateContract({
         address: ensRentAddress,
         abi: ensRentABI,
         functionName: "rentDomain",
         args: [tokenId, desiredEndTimestamp],
         value: totalPrice,
         chain: config.chains[0],
-        account: connectedAccount!,
+        account: connectedAccount,
       });
 
-      return;
-      // return router.push("/");
+      const hash = await walletClient.writeContract(request);
+      setIsCheckingWallet(false);
+      setIsProcessingTx(true);
+
+      await walletClient.waitForTransactionReceipt({ hash });
+      setIsRented(true);
     } catch (err) {
       console.error("Error renting domain:", err);
       // Handle error (e.g., show an error message to the user)
+    } finally {
+      setIsRenting(false);
+      setIsCheckingWallet(false);
+      setIsProcessingTx(false);
     }
   };
 
@@ -223,7 +242,7 @@ export default function DomainBuy() {
                         <span className="text-lg font-medium">Total Price</span>
                       </div>
                       <span className="text-2xl font-bold">
-                        {formatEther(BigInt(totalPrice))} ETH
+                        {formatEther(totalPrice)} ETH
                       </span>
                     </div>
 
@@ -271,9 +290,28 @@ export default function DomainBuy() {
                       size="lg"
                       className="w-full"
                       onClick={handleBuy}
-                      disabled={!selectedEndDate}
+                      disabled={
+                        selectedEndDate < new Date() ||
+                        isRenting ||
+                        isRented ||
+                        duration <= 0
+                      }
                     >
-                      Rent Now for {formatEther(totalPrice)} ETH
+                      {isCheckingWallet ? (
+                        <div className="flex items-center gap-2">
+                          <Wallet className="size-4 animate-pulse" />
+                          Check your wallet...
+                        </div>
+                      ) : isProcessingTx ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Processing transaction...
+                        </div>
+                      ) : isRented ? (
+                        "The domain is now yours :)"
+                      ) : (
+                        `Rent Now for ${formatEther(totalPrice)} ETH`
+                      )}
                     </Button>
                   ) : (
                     <Button
