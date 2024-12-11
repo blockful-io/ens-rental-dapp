@@ -108,8 +108,14 @@ export default function useListings({ lender }: { lender: string }): [Domain[], 
         ...rental.listing,
         name: rental.listing.name.endsWith(".eth") ? rental.listing.name : `${rental.listing.name}.eth`,
         status: RentalStatus.rentedIn,
-        rentals: { items: [rental] },
-        borrower: rental.borrower
+        rentals: [
+          {
+            borrower: rental.borrower,
+            startTime: rental.startTime,
+            endTime: rental.endTime,
+            price: rental.listing.price,
+          },
+        ],
       })));
 
       setRentalOuts(responseData.data.listings.items
@@ -118,7 +124,14 @@ export default function useListings({ lender }: { lender: string }): [Domain[], 
           ...listing,
           name: listing.name.endsWith(".eth") ? listing.name : `${listing.name}.eth`,
           status: RentalStatus.rentedOut,
-          borrower: listing.rentals.items[0].borrower
+          rentals: [
+            ...listing.rentals.items.map((rental: any) => ({
+              borrower: rental.borrower,
+              startTime: rental.startTime,
+              endTime: rental.endTime,
+              price: listing.price,
+            })),
+          ],
         })));
 
       setIsLoading(false);

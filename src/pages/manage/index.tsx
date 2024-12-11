@@ -38,7 +38,8 @@ import useDomainsByAddress from "@/src/hooks/useDomains";
 import { useAccount } from "wagmi";
 import { Domain, RentalStatus } from "@/src/types";
 import useListings from "@/src/hooks/useListings";
-import { formatEther } from "viem";
+import { formatEther, labelhash, namehash } from "viem";
+import { getStatusColor } from "@/src/utils";
 
 export default function RegisteredDomains() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,6 +48,7 @@ export default function RegisteredDomains() {
     RentalStatus.rentedOut
   );
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
   const [unlistDomain, setUnlistDomain] = useState<Pick<
     Domain,
     "id" | "name"
@@ -65,21 +67,18 @@ export default function RegisteredDomains() {
 
   useEffect(() => {
     async function getDomains() {
+      setIsLoading(true);
+
       const filteredDomains: Domain[] = [
         ...availableNames.map(
           (name: string, i: number): Domain => ({
             id: i.toString(),
             name,
-            available: false,
             status: RentalStatus.available,
-            maxRentalTime: "",
-            price: 0,
-            lender: "",
+            lender: address!,
             createdAt: "",
-            isWrapped: false,
-            node: "",
-            tokenId: "",
-            borrower: "",
+            node: namehash(name),
+            tokenId: Number(labelhash(name.replace(".eth", ""))).toString(),
           })
         ),
         ...listings,
@@ -92,6 +91,7 @@ export default function RegisteredDomains() {
       );
 
       setFilteredDomains(sortDomains(filteredDomains, sortBy));
+      setIsLoading(false);
     }
 
     getDomains();
@@ -103,7 +103,7 @@ export default function RegisteredDomains() {
 
   const handleUnlist = () => unlistDomain && setUnlistDomain(null);
 
-  if (isLoadingAvailables || isLoadingListings) {
+  if (isLoadingAvailables || isLoadingListings || isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 flex items-center justify-center">
         <Card className="w-full max-w-md">
@@ -290,7 +290,9 @@ export default function RegisteredDomains() {
                           </span>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          {domain.borrower || "-"}
+                          {domain.rentals?.length
+                            ? domain.rentals[0].borrower
+                            : "-"}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -374,21 +376,6 @@ export default function RegisteredDomains() {
     </div>
   );
 }
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case RentalStatus.available:
-      return "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400";
-    case RentalStatus.rentedOut:
-      return "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400";
-    case RentalStatus.rentedIn:
-      return "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400";
-    case RentalStatus.listed:
-      return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400";
-    default:
-      return "bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400";
-  }
-};
 
 const getTimeUntilExpiry = (expiryDate: string) => {
   const now = new Date();

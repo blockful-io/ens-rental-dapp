@@ -28,6 +28,7 @@ import {
   namehash,
   parseEther,
   publicActions,
+  formatEther,
 } from "viem";
 
 import { config } from "@/src/wagmi";
@@ -57,6 +58,10 @@ export default function Component() {
 
   const [isListing, setIsListing] = useState(false);
   const [isCheckingApproval, setIsCheckingApproval] = useState(false);
+
+  const pricePerSecond = startingPrice
+    ? parseEther(startingPrice.toString()) / BigInt(ONE_YEAR_IN_SECONDS)
+    : BigInt(0);
 
   useEffect(() => {
     if (typeof window !== "undefined" && address) {
@@ -280,7 +285,9 @@ export default function Component() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="startingPrice">Price per year (ETH)</Label>
+                <Label htmlFor="startingPrice">
+                  Starting Price per Year (ETH)
+                </Label>
                 <Input
                   id="startingPrice"
                   type="number"
@@ -288,6 +295,11 @@ export default function Component() {
                   placeholder="0.01"
                   onChange={(e) => setStartingPrice(Number(e.target.value))}
                 />
+                {!!startingPrice && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Price per second: {formatEther(pricePerSecond)} ETH
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="duration">Rental Maximum Duration</Label>
