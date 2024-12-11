@@ -38,8 +38,19 @@ import useDomainsByAddress from "@/src/hooks/useDomains";
 import { useAccount } from "wagmi";
 import { Domain, RentalStatus } from "@/src/types";
 import useListings from "@/src/hooks/useListings";
-import { formatEther, labelhash, namehash } from "viem";
+import {
+  createWalletClient,
+  custom,
+  formatEther,
+  labelhash,
+  namehash,
+  publicActions,
+} from "viem";
+
+import ensRentABI from "@/abis/ensrent.json";
 import { getStatusColor } from "@/src/utils";
+import { ensRentAddress } from "@/src/wagmi";
+import { config } from "@/src/wagmi";
 
 export default function RegisteredDomains() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -101,7 +112,34 @@ export default function RegisteredDomains() {
     setFilteredDomains((prevDomains) => sortDomains(prevDomains, sortBy));
   }, [sortBy]);
 
-  const handleUnlist = () => unlistDomain && setUnlistDomain(null);
+  const handleUnlist = async () => {
+    if (!unlistDomain) return;
+
+    setIsLoading(true);
+    try {
+      const walletClient = createWalletClient({
+        account: address,
+        transport: custom(window.ethereum),
+        chain: config.chains[0],
+      }).extend(publicActions);
+
+      const tokenId = BigInt(labelhash(unlistDomain.name.replace(".eth", "")));
+
+      const hash = await walletClient.writeContract({
+        address: ensRentAddress,
+        abi: ensRentABI,
+        functionName: "reclaimDomain",
+        args: [tokenId],
+        account: address,
+      });
+
+      await walletClient.waitForTransactionReceipt({ hash });
+    } catch (err) {
+      console.error("Error unlisting domain:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (isLoadingAvailables || isLoadingListings || isLoading) {
     return (
