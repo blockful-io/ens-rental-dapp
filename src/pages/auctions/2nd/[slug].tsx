@@ -167,13 +167,15 @@ export default function AuctionDetails() {
                           onChange={(e) => setBidAmount(e.target.value)}
                           step="0.01"
                           min={mockAuction.minimumBid}
+                          onWheel={(e) => e.currentTarget.blur()}
                         />
                         <Button
                           className="whitespace-nowrap"
                           onClick={handleBid}
                           disabled={
                             !bidAmount ||
-                            parseFloat(bidAmount) < mockAuction.minimumBid
+                            Number(bidAmount) < mockAuction.minimumBid ||
+                            Number(bidAmount) <= 0
                           }
                         >
                           Place Bid
