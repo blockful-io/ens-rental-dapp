@@ -44,7 +44,7 @@ export default function RegisteredDomains() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [filteredStatus, setFilteredStatus] = useState<RentalStatus | "all">(
-    RentalStatus.rented
+    RentalStatus.rentedOut
   );
   const router = useRouter();
   const [unlistDomain, setUnlistDomain] = useState<Pick<
@@ -55,9 +55,12 @@ export default function RegisteredDomains() {
 
   if (!address) return <div>Loading...</div>;
 
-  const [listings] = useListings({ lender: address });
+  const [listings, rentalIns, rentalOuts, isLoadingListings] = useListings({
+    lender: address,
+  });
 
-  const [availableNames, isLoading, error] = useDomainsByAddress(address);
+  const [availableNames, isLoadingAvailables, error] =
+    useDomainsByAddress(address);
   const [filteredDomains, setFilteredDomains] = useState<Domain[]>([]);
 
   useEffect(() => {
@@ -80,6 +83,8 @@ export default function RegisteredDomains() {
           })
         ),
         ...listings,
+        ...rentalIns,
+        ...rentalOuts,
       ]
         .filter(
           (domain) =>
@@ -110,7 +115,7 @@ export default function RegisteredDomains() {
 
   const handleUnlist = () => unlistDomain && setUnlistDomain(null);
 
-  if (isLoading) {
+  if (isLoadingAvailables || isLoadingListings) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 flex items-center justify-center">
         <Card className="w-full max-w-md">
@@ -208,25 +213,34 @@ export default function RegisteredDomains() {
                     <SelectItem value="available">
                       <span
                         className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
-                          "available"
+                          RentalStatus.available
                         )}`}
                       >
                         Available
                       </span>
                     </SelectItem>
-                    <SelectItem value="rented">
+                    <SelectItem value="rented out">
                       <span
                         className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
-                          "rented"
+                          RentalStatus.rentedOut
                         )}`}
                       >
-                        Rented
+                        Rented out
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="rented in">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
+                          RentalStatus.rentedIn
+                        )}`}
+                      >
+                        Rented in
                       </span>
                     </SelectItem>
                     <SelectItem value="listed">
                       <span
                         className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
-                          "listed"
+                          RentalStatus.listed
                         )}`}
                       >
                         Listed
@@ -294,7 +308,7 @@ export default function RegisteredDomains() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            {domain.status === "available" && (
+                            {domain.status === RentalStatus.available && (
                               <Button
                                 size="sm"
                                 className="w-28"
@@ -306,7 +320,7 @@ export default function RegisteredDomains() {
                                 List for Rent
                               </Button>
                             )}
-                            {domain.status === "listed" && (
+                            {domain.status === RentalStatus.listed && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -321,7 +335,8 @@ export default function RegisteredDomains() {
                                 Unlist
                               </Button>
                             )}
-                            {domain.status === "rented" && (
+                            {(domain.status === RentalStatus.rentedOut ||
+                              domain.status === RentalStatus.rentedIn) && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -368,11 +383,13 @@ export default function RegisteredDomains() {
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case "available":
+    case RentalStatus.available:
       return "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400";
-    case "rented":
+    case RentalStatus.rentedOut:
       return "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400";
-    case "listed":
+    case RentalStatus.rentedIn:
+      return "bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400";
+    case RentalStatus.listed:
       return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400";
     default:
       return "bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-400";

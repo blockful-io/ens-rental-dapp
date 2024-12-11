@@ -1,6 +1,7 @@
 export enum RentalStatus {
   available = "available",
-  rented = "rented",
+  rentedOut = "rented out",
+  rentedIn = "rented in",
   listed = "listed",
 }
 
