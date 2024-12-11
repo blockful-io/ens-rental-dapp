@@ -47,6 +47,7 @@ export default function RegisteredDomains() {
     RentalStatus.rentedOut
   );
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
   const [unlistDomain, setUnlistDomain] = useState<Pick<
     Domain,
     "id" | "name"
@@ -65,6 +66,8 @@ export default function RegisteredDomains() {
 
   useEffect(() => {
     async function getDomains() {
+      setIsLoading(true);
+
       const filteredDomains: Domain[] = [
         ...availableNames.map(
           (name: string, i: number): Domain => ({
@@ -87,6 +90,7 @@ export default function RegisteredDomains() {
       );
 
       setFilteredDomains(sortDomains(filteredDomains, sortBy));
+      setIsLoading(false);
     }
 
     getDomains();
@@ -98,7 +102,7 @@ export default function RegisteredDomains() {
 
   const handleUnlist = () => unlistDomain && setUnlistDomain(null);
 
-  if (isLoadingAvailables || isLoadingListings) {
+  if (isLoadingAvailables || isLoadingListings || isLoading) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4 flex items-center justify-center">
         <Card className="w-full max-w-md">
