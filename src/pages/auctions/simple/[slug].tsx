@@ -35,9 +35,7 @@ export default function DomainBuy() {
 
   const pricePerSecond = BigInt(listing?.price || 0);
   console.log("pricePerSecond", pricePerSecond);
-  const totalPrice = parseEther(
-    (Number(pricePerSecond) * Math.floor(duration)).toString()
-  );
+  const totalPrice = pricePerSecond * BigInt(duration);
 
   console.log("pricePerSecond", pricePerSecond);
   console.log("totalPrice", totalPrice);
@@ -171,7 +169,7 @@ export default function DomainBuy() {
         <Button
           variant="ghost"
           className="flex items-center gap-2"
-          onClick={() => router.back()}
+          onClick={() => router.push("/browse")}
         >
           <ArrowLeft className="size-4" />
           Back to Browse
