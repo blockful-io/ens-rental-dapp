@@ -27,6 +27,7 @@ import {
 import { Search, Clock, TrendingDown, LayoutGrid, List } from "lucide-react";
 import { useRouter } from "next/router";
 import useAvailableDomains from "@/src/hooks/useAvailableDomains";
+import { useAccount } from "wagmi";
 
 type ViewMode = "grid" | "table";
 
@@ -35,6 +36,7 @@ export default function Component() {
   const [sortBy, setSortBy] = useState("price");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const router = useRouter();
+  const { address } = useAccount();
 
   const [availableDomains, isLoading, error] = useAvailableDomains();
 
@@ -48,45 +50,6 @@ export default function Component() {
         return Number(a.maxRentalTime) - Number(b.maxRentalTime);
       return 0;
     });
-
-  const GridView = () => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {filteredDomains.map((domain) => (
-        <Card key={domain.id} className="flex flex-col">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold text-center">
-              {domain.name}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-grow">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center">
-                <TrendingDown className="w-5 h-5 text-green-500 mr-2" />
-                <span className="text-lg font-medium">{domain.price} ETH</span>
-              </div>
-              <div className="flex items-center">
-                <Clock className="w-5 h-5 text-blue-500 mr-2" />
-                <span>
-                  {Math.floor(
-                    (Number(domain.maxRentalTime) - Date.now()) / 60000
-                  )}{" "}
-                  min left
-                </span>
-              </div>
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button
-              className="w-full"
-              onClick={() => router.push(`/auctions/simple/${domain.name}`)}
-            >
-              Rent Now
-            </Button>
-          </CardFooter>
-        </Card>
-      ))}
-    </div>
-  );
 
   const TableView = () => (
     <div className="rounded-md border overflow-hidden">
@@ -125,7 +88,7 @@ export default function Component() {
                       router.push(`/auctions/simple/${domain.name}`)
                     }
                   >
-                    Rent Now
+                    {domain.lender != address ? "Rent Now" : "Close Rental"}
                   </Button>
                 </TableCell>
               </TableRow>
@@ -190,8 +153,6 @@ export default function Component() {
                 <p>Loading available domains...</p>
               ) : error ? (
                 <p>Error: {error.message}</p>
-              ) : viewMode === "grid" ? (
-                <GridView />
               ) : (
                 <TableView />
               )}
