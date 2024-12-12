@@ -38,7 +38,7 @@ export default function Component() {
   const router = useRouter();
   const { address } = useAccount();
 
-  const [availableDomains, isLoading, error] = useAvailableDomains();
+  const [availableDomains, isLoading, error] = useAvailableDomains(address);
 
   const filteredDomains = availableDomains
     .filter((domain) =>
@@ -85,7 +85,7 @@ export default function Component() {
                   size="sm"
                   onClick={() => router.push(`/auctions/simple/${domain.name}`)}
                 >
-                  {domain.lender != address ? "Rent Now" : "Unlist Domain"}
+                  Rent Now
                 </Button>
               </TableCell>
             </TableRow>
