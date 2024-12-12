@@ -47,7 +47,7 @@ export default function RegisteredDomains() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("name");
   const [filteredStatus, setFilteredStatus] = useState<RentalStatus | "all">(
-    RentalStatus.rentedOut
+    "all"
   );
   const [isLoading, setIsLoading] = useState(true);
   const [unlistDomain, setUnlistDomain] = useState<Pick<

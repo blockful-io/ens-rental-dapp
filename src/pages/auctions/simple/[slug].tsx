@@ -172,7 +172,6 @@ export default function DomainBuy() {
   tomorrow.setDate(tomorrow.getDate() + 1);
   const minDate = tomorrow.toISOString().split("T")[0];
 
-  const rentalEndDate = new Date(Number(listing.maxRentalTime) * 1000);
   const maxDate = new Date(Number(listing.maxRentalTime) * 1000);
 
   return (
@@ -222,15 +221,17 @@ export default function DomainBuy() {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-                  <div className="flex items-center gap-2">
-                    <Tag className="size-5 text-blue-500" />
-                    <span className="text-lg font-medium">Total Price</span>
+                {!isSeller && (
+                  <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                    <div className="flex items-center gap-2">
+                      <Tag className="size-5 text-blue-500" />
+                      <span className="text-lg font-medium">Total Price</span>
+                    </div>
+                    <span className="text-2xl font-bold">
+                      {formatEther(BigInt(totalPrice))} ETH
+                    </span>
                   </div>
-                  <span className="text-2xl font-bold">
-                    {formatEther(BigInt(totalPrice))} ETH
-                  </span>
-                </div>
+                )}
 
                 <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
                   <div className="flex items-center gap-2">
@@ -241,7 +242,7 @@ export default function DomainBuy() {
                     <p>
                       <input
                         type="date"
-                        value={selectedEndDate.toISOString().split("T")[0]}
+                        value={maxDate.toISOString().split("T")[0]}
                         className="px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                         disabled
                       />

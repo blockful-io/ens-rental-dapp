@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ensRentGraphQL } from "@/src/wagmi";
-import { formatEther } from "viem";
-import { CONFIG_FILES } from "next/dist/shared/lib/constants";
+import { Address, formatEther } from "viem";
+import { Domain } from "@/src/types";
 
 interface AvailableDomain {
   id: string;
@@ -16,7 +16,7 @@ interface AvailableDomain {
   tokenId: string;
 }
 
-export default function useAvailableDomains(): [
+export default function useAvailableDomains(lender: Address | undefined): [
   AvailableDomain[],
   boolean,
   Error | null
@@ -25,10 +25,11 @@ export default function useAvailableDomains(): [
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const oneDayInSeconds = 24 * 60 * 60;
   const oneYearInSeconds = 365 * 24 * 60 * 60;
 
   useEffect(() => {
+    if (!lender) return;
+
     const fetchAvailableDomains = async () => {
       setIsLoading(true);
       try {
@@ -39,8 +40,8 @@ export default function useAvailableDomains(): [
           },
           body: JSON.stringify({
             query: `
-              {
-                listings(where: {}) {
+              query GetListings($lender: String!) {
+                listings(where: {lender_not: $lender}) {
                   items {
                     rentals {
                       items {
@@ -61,6 +62,9 @@ export default function useAvailableDomains(): [
                 }
               }
             `,
+            variables: {
+              lender,
+            },
           }),
         });
 
@@ -78,11 +82,10 @@ export default function useAvailableDomains(): [
 
         if (data?.listings?.items) {
           const availableDomains = data.listings.items
-            // .filter((listing: any) => listing.active)
-            .map((listing: any, index: number) => {
+            .map((listing: Domain) => {
               // Convert price per second to ETH and multiply by seconds in a year
               const pricePerYear =
-                BigInt(listing.price) * BigInt(oneYearInSeconds);
+                BigInt(listing.price || 0) * BigInt(oneYearInSeconds);
               const priceInEth = formatEther(pricePerYear);
 
               return {
@@ -107,7 +110,6 @@ export default function useAvailableDomains(): [
           setDomains(filteredDomains);
         }
       } catch (err) {
-        console.error("Error fetching listings:", err);
         setError(new Error("An error occurred fetching available domains"));
       } finally {
         setIsLoading(false);
