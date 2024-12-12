@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
-import { ensRentGraphQL } from "@/src/wagmi";
+import {
+  // ensRentGraphQL,
+  getEnsRentGraphQL,
+} from "@/src/wagmi";
 import { Address, formatEther } from "viem";
 import { Domain } from "@/src/types";
+import { usePublicClient } from "wagmi";
 
 interface AvailableDomain {
   id: string;
@@ -16,14 +20,15 @@ interface AvailableDomain {
   tokenId: string;
 }
 
-export default function useAvailableDomains(lender: Address | undefined): [
-  AvailableDomain[],
-  boolean,
-  Error | null
-] {
+export default function useAvailableDomains(
+  lender: Address | undefined
+): [AvailableDomain[], boolean, Error | null] {
   const [domains, setDomains] = useState<AvailableDomain[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+
+  const publicClient = usePublicClient();
+  const ensRentGraphQL = getEnsRentGraphQL(publicClient?.chain.id || 1);
 
   const oneYearInSeconds = 365 * 24 * 60 * 60;
 
@@ -81,8 +86,8 @@ export default function useAvailableDomains(lender: Address | undefined): [
         const { data } = responseData;
 
         if (data?.listings?.items) {
-          const availableDomains = data.listings.items
-            .map((listing: Domain) => {
+          const availableDomains = data.listings.items.map(
+            (listing: Domain) => {
               // Convert price per second to ETH and multiply by seconds in a year
               const pricePerYear =
                 BigInt(listing.price || 0) * BigInt(oneYearInSeconds);
@@ -100,7 +105,8 @@ export default function useAvailableDomains(lender: Address | undefined): [
                 tokenId: listing.tokenId,
                 rentals: listing.rentals,
               };
-            });
+            }
+          );
 
           const filteredDomains = availableDomains.filter((domain: any) => {
             const lastRentEndTime = domain?.rentals?.items[0]?.endTime;

@@ -34,7 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/src/components/ui/dialog";
-import { formatEther, http, labelhash, namehash } from "viem";
+import { formatEther, labelhash, namehash } from "viem";
 import { useAccount, useEnsName, usePublicClient } from "wagmi";
 
 import useDomainsByAddress from "@/src/hooks/useDomains";
@@ -42,9 +42,6 @@ import { Domain, RentalStatus } from "@/src/types";
 import useListings from "@/src/hooks/useListings";
 import { useUnlistDomain } from "@/src/hooks/useUnlistDomain";
 import { getStatusColor } from "@/src/utils";
-import { getName } from "@ensdomains/ensjs/public";
-import { createEnsPublicClient } from "@ensdomains/ensjs";
-import { mainnet } from "viem/chains";
 import Link from "next/link";
 
 export default function RegisteredDomains() {

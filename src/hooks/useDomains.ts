@@ -25,10 +25,14 @@ export default function useDomainsByAddress(
             resolvedAddress: false,
             owner: false,
             wrappedOwner: true,
-          }
+          },
         });
 
-        setNames(result.map((object) => object.name!).filter((name) => name.split(".").length === 2));
+        setNames(
+          result
+            .map((object) => object.name!)
+            .filter((name) => name.split(".").length === 2)
+        );
       } catch (error) {
         setError(new Error("An error occurred fetching domains"));
       } finally {
