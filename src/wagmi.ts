@@ -39,16 +39,6 @@ export const config = getDefaultConfig({
           http: [process.env.NEXT_PUBLIC_MAINNET_RPC_URL!],
         },
       },
-      contracts: {
-        ensGraphQL: {
-          address: process.env
-            .NEXT_PUBLIC_MAINNET_ENS_GRAPHQL_URL as `0x${string}`,
-        },
-        ensRentGraphQL: {
-          address: process.env
-            .NEXT_PUBLIC_MAINNET_ENS_RENT_GRAPHQL_URL as `0x${string}`,
-        },
-      },
     },
     {
       ...addEnsContracts(sepolia),
@@ -58,15 +48,6 @@ export const config = getDefaultConfig({
         },
         public: {
           http: [process.env.NEXT_PUBLIC_RPC_URL!],
-        },
-      },
-      contracts: {
-        ensGraphQL: {
-          address: process.env.NEXT_PUBLIC_ENS_GRAPHQL_URL as `0x${string}`,
-        },
-        ensRentGraphQL: {
-          address: process.env
-            .NEXT_PUBLIC_ENS_RENT_GRAPHQL_URL as `0x${string}`,
         },
       },
     },
@@ -91,7 +72,6 @@ export function getEnsRentAddress(chainId: number) {
 export const baseRegistrarAddress = process.env
   .NEXT_PUBLIC_BASE_REGISTRAR_ADDRESS as `0x${string}`;
 
-// Name Wrapper - The same for both chains
 export const nameWrapperAddress = process.env
   .NEXT_PUBLIC_NAMEWRAPPER_ADDRESS as `0x${string}`;
 
