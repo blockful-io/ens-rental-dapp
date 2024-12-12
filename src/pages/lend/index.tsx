@@ -48,7 +48,7 @@ export const ONE_YEAR_IN_SECONDS = 31536000;
 export default function Component() {
   const router = useRouter();
   const [domain, setDomain] = useState("");
-  const [startingPrice, setStartingPrice] = useState<number | null>(null);
+  const [price, setPrice] = useState<string>();
   const [duration, setDuration] = useState(0);
   const { address } = useAccount();
   const [walletClient, setWalletClient] = useState<any>(null);
@@ -59,8 +59,8 @@ export default function Component() {
   const [isListing, setIsListing] = useState(false);
   const [isCheckingApproval, setIsCheckingApproval] = useState(false);
 
-  const pricePerSecond = startingPrice
-    ? parseEther(startingPrice.toString()) / BigInt(ONE_YEAR_IN_SECONDS)
+  const pricePerSecond = price
+    ? parseEther(price) / BigInt(ONE_YEAR_IN_SECONDS)
     : BigInt(0);
 
   useEffect(() => {
@@ -161,7 +161,7 @@ export default function Component() {
   };
 
   const listDomain = async (domainToList: string) => {
-    if (!startingPrice || !duration || !walletClient) {
+    if (!price || !duration || !walletClient) {
       return;
     }
 
@@ -171,8 +171,7 @@ export default function Component() {
       const name = domainToList.split(".")[0];
       const tokenId = BigInt(labelhash(name));
 
-      const pricePerSecond =
-        parseEther(startingPrice.toString()) / BigInt(ONE_YEAR_IN_SECONDS);
+      const pricePerSecond = parseEther(price) / BigInt(ONE_YEAR_IN_SECONDS);
       const maxEndTimestamp = BigInt(Math.floor(Date.now() / 1000) + duration);
 
       setCheckYourWallet(true);
@@ -287,19 +286,18 @@ export default function Component() {
                 <Input
                   id="startingPrice"
                   type="text"
-                  inputMode="decimal"
-                  pattern="[0-9]*[.]?[0-9]*"
-                  value={startingPrice ?? ""}
-                  min={"0.000000000000000001"}
+                  value={price}
                   placeholder="0.01"
                   onChange={(e) => {
-                    const value = e.target.value.replace(/[^0-9.]/g, "");
-                    if (value === "" || !isNaN(parseFloat(value))) {
-                      setStartingPrice(Number(value));
+                    if (
+                      !e.target.value ||
+                      /^\d*(\.\d{0,18})?$/.test(e.target.value)
+                    ) {
+                      setPrice(e.target.value);
                     }
                   }}
                 />
-                {!!startingPrice && (
+                {!!price && (
                   <p className="text-sm text-gray-500 mt-1">
                     Price per second: {formatEther(pricePerSecond)} ETH
                   </p>
@@ -338,9 +336,7 @@ export default function Component() {
             ) : (
               <Button
                 onClick={async () => await listDomain(domain)}
-                disabled={
-                  !domain || !startingPrice || duration <= 0 || isListing
-                }
+                disabled={!domain || !price || duration <= 0 || isListing}
               >
                 {checkYourWallet
                   ? "Check your wallet"
