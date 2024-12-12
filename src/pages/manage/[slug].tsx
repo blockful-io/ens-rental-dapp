@@ -26,6 +26,8 @@ import { getStatusColor } from "@/src/utils";
 import { RentalStatus } from "@/src/types";
 import Link from "next/link";
 
+const SECONDS_PER_YEAR = 31536000;
+
 export default function RentedDomainDetails() {
   const router = useRouter();
   const client = usePublicClient();
@@ -109,11 +111,13 @@ export default function RentedDomainDetails() {
                 <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
                   <div className="flex items-center gap-2 mb-2 text-sm text-gray-500 dark:text-gray-400">
                     <Wallet className="w-4 h-4" />
-                    <span>Rental Price</span>
+                    <span>Rental Price Per Year</span>
                   </div>
                   <div className="text-2xl font-bold">
                     {rental.price
-                      ? `${formatEther(BigInt(rental.price))} ETH`
+                      ? `${formatEther(
+                          BigInt(rental.price) * BigInt(SECONDS_PER_YEAR)
+                        )} ETH`
                       : "-"}
                   </div>
                 </div>
