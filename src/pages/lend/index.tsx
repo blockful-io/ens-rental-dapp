@@ -145,7 +145,7 @@ export default function Component() {
         args: [ensRentAddress, true],
         account: address,
       });
-      await walletClient.writeContract(request);
+
       setCheckYourWallet(false);
 
       await walletClient.waitForTransactionReceipt({
@@ -326,7 +326,9 @@ export default function Component() {
               </Button>
             ) : !isApproved ? (
               <Button
-                onClick={async () => await approveDomain(domain)}
+                onClick={async () => {
+                  await approveDomain(domain);
+                }}
                 disabled={!domain || isApproving}
               >
                 {isApproving ? "Approving..." : "Approve Domain for Rental"}
