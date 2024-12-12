@@ -315,6 +315,9 @@ export default function Component() {
                     setDuration(Math.floor((end - start) / 1000));
                   }}
                 />
+                <p className="text-sm text-gray-500 mt-1">
+                  Note: It must be before the domain's expiry date
+                </p>
               </div>
             </div>
           </CardContent>
