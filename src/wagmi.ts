@@ -39,6 +39,11 @@ export const config = getDefaultConfig({
           http: [process.env.NEXT_PUBLIC_MAINNET_RPC_URL!],
         },
       },
+      subgraphs: {
+        ens: {
+          url: process.env.NEXT_PUBLIC_ENS_GRAPHQL_URL,
+        },
+      },
     },
     {
       ...addEnsContracts(sepolia),
