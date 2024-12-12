@@ -16,13 +16,15 @@ import {
   ExternalLink,
   Loader2,
 } from "lucide-react";
+
 import { useRouter } from "next/router";
-import { usePublicClient } from "wagmi";
+import { usePublicClient, useEnsName } from "wagmi";
 import { formatEther } from "viem";
 
 import useDomainData from "@/src/hooks/useDomainData";
 import { getStatusColor } from "@/src/utils";
 import { RentalStatus } from "@/src/types";
+import Link from "next/link";
 
 export default function RentedDomainDetails() {
   const router = useRouter();
@@ -30,6 +32,12 @@ export default function RentedDomainDetails() {
   const { slug: domain } = router.query;
 
   const [rental, isLoading] = useDomainData(domain as string);
+  const { data: lenderEnsName } = useEnsName({
+    address: rental?.lender as `0x${string}`,
+  });
+  const { data: borrowerEnsName } = useEnsName({
+    address: rental?.rentals?.[0]?.borrower as `0x${string}`,
+  });
 
   if (isLoading || !rental) {
     return (
@@ -157,18 +165,40 @@ export default function RentedDomainDetails() {
                       <span className="gap-2 mt-2 text-sm text-gray-500 dark:text-gray-400">
                         Owner:
                       </span>
-                      <span className="text-sm">{rental.lender}</span>
+                      {lenderEnsName ? (
+                        <div>
+                          <Link
+                            target="_blank"
+                            href={`https://app.ens.domains/${lenderEnsName}`}
+                            className="text-sm text-blue-500 hover:text-blue-600 transition-colors duration-300"
+                          >
+                            {lenderEnsName}
+                          </Link>
+                        </div>
+                      ) : (
+                        <span className="text-sm">{rental.lender}</span>
+                      )}
                     </div>
                     {rental.hasActiveRental && (
                       <div className="flex flex-col">
                         <span className="gap-2 mt-2 text-sm text-gray-500 dark:text-gray-400">
                           Renter:
                         </span>
-                        <span className="text-sm">
-                          {rental.hasActiveRental
-                            ? rental.rentals![0].borrower
-                            : "-"}
-                        </span>
+                        {borrowerEnsName ? (
+                          <div>
+                            <Link
+                              target="_blank"
+                              href={`https://app.ens.domains/${borrowerEnsName}`}
+                              className="text-sm text-blue-500 hover:text-blue-600 transition-colors duration-300"
+                            >
+                              {borrowerEnsName}
+                            </Link>
+                          </div>
+                        ) : (
+                          <span className="text-sm">
+                            {rental.rentals![0].borrower}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -205,7 +235,7 @@ export default function RentedDomainDetails() {
               </div>
             </div>  */}
           </CardContent>
-          <CardFooter className="flex justify-between">
+          <CardFooter className="flex justify-start gap-2">
             <Button
               variant="outline"
               onClick={() => {
@@ -224,6 +254,11 @@ export default function RentedDomainDetails() {
             >
               <ExternalLink className="w-4 h-4" />
               View on Etherscan
+            </Button>
+            <Button asChild>
+              <Link target="_blank" href={`https://app.ens.domains/${domain}`}>
+                Manage your rented domain
+              </Link>
             </Button>
           </CardFooter>
         </Card>

@@ -34,14 +34,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/src/components/ui/dialog";
-import { formatEther, labelhash, namehash } from "viem";
-import { useAccount } from "wagmi";
+import { formatEther, http, labelhash, namehash } from "viem";
+import { useAccount, useEnsName, usePublicClient } from "wagmi";
 
 import useDomainsByAddress from "@/src/hooks/useDomains";
 import { Domain, RentalStatus } from "@/src/types";
 import useListings from "@/src/hooks/useListings";
 import { useUnlistDomain } from "@/src/hooks/useUnlistDomain";
 import { getStatusColor } from "@/src/utils";
+import { getName } from "@ensdomains/ensjs/public";
+import { createEnsPublicClient } from "@ensdomains/ensjs";
+import { mainnet } from "viem/chains";
+import Link from "next/link";
 
 export default function RegisteredDomains() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -113,6 +117,35 @@ export default function RegisteredDomains() {
     }
     setIsLoading(false);
   };
+
+  function BorrowerCell({ borrower }: { borrower: string }) {
+    const client = usePublicClient();
+
+    const { data: ensName, isLoading: isLoadingEns } = useEnsName({
+      address: borrower as `0x${string}`,
+      chainId: client?.chain.id,
+    });
+
+    if (isLoadingEns) {
+      return <span className="animate-pulse">Loading...</span>;
+    }
+
+    return (
+      <span>
+        {(ensName && (
+          <Link
+            target="_blank"
+            className="text-blue-500 hover:underline"
+            href={`https://app.ens.domains/${borrower}`}
+          >
+            {ensName.toString()}
+          </Link>
+        )) ||
+          borrower ||
+          "-"}
+      </span>
+    );
+  }
 
   if (isLoadingAvailables || isLoadingListings || isLoading || isUnlisting) {
     return (
@@ -265,100 +298,106 @@ export default function RegisteredDomains() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredDomains.map((domain) => (
-                      <TableRow key={domain.id}>
-                        <TableCell className="font-medium">
-                          {domain.name}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Timer className="h-4 w-4 text-gray-500" />
-                            {domain.maxRentalTime ? (
-                              <div className="flex flex-col">
-                                <span>
-                                  {new Date(
-                                    parseInt(domain.maxRentalTime) * 1000
-                                  ).toLocaleDateString()}
-                                </span>
-                                <span className="text-xs text-gray-500">
-                                  ({getTimeUntilExpiry(domain.maxRentalTime)}{" "}
-                                  days left)
-                                </span>
-                              </div>
+                    {filteredDomains.map((domain) => {
+                      return (
+                        <TableRow key={domain.id}>
+                          <TableCell className="font-medium">
+                            {domain.name}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Timer className="h-4 w-4 text-gray-500" />
+                              {domain.maxRentalTime ? (
+                                <div className="flex flex-col">
+                                  <span>
+                                    {new Date(
+                                      parseInt(domain.maxRentalTime) * 1000
+                                    ).toLocaleDateString()}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    ({getTimeUntilExpiry(domain.maxRentalTime)}{" "}
+                                    days left)
+                                  </span>
+                                </div>
+                              ) : (
+                                <span>N/A</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
+                                domain.status
+                              )}`}
+                            >
+                              {domain.status.charAt(0).toUpperCase() +
+                                domain.status.slice(1)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell">
+                            {domain.rentals?.length ? (
+                              <BorrowerCell
+                                borrower={domain.rentals[0].borrower}
+                              />
                             ) : (
-                              <span>N/A</span>
+                              "-"
                             )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(
-                              domain.status
-                            )}`}
-                          >
-                            {domain.status.charAt(0).toUpperCase() +
-                              domain.status.slice(1)}
-                          </span>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          {domain.rentals?.length
-                            ? domain.rentals[0].borrower
-                            : "-"}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Tag className="h-4 w-4 text-gray-500" />
-                            {domain.price
-                              ? `${formatEther(BigInt(domain.price))} ETH`
-                              : "-"}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            {domain.status === RentalStatus.available && (
-                              <Button
-                                size="sm"
-                                className="w-28"
-                                variant="outline"
-                                onClick={() =>
-                                  router.push(`/lend?domain=${domain.name}`)
-                                }
-                              >
-                                List for Rent
-                              </Button>
-                            )}
-                            {domain.status === RentalStatus.listed && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-28"
-                                onClick={() =>
-                                  setUnlistDomain({
-                                    id: domain.id,
-                                    name: domain.name,
-                                  })
-                                }
-                              >
-                                Unlist
-                              </Button>
-                            )}
-                            {(domain.status === RentalStatus.rentedOut ||
-                              domain.status === RentalStatus.rentedIn) && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="w-28"
-                                onClick={() =>
-                                  router.push(`/manage/${domain.name}`)
-                                }
-                              >
-                                View Details
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Tag className="h-4 w-4 text-gray-500" />
+                              {domain.price
+                                ? `${formatEther(BigInt(domain.price))} ETH`
+                                : "-"}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              {domain.status === RentalStatus.available && (
+                                <Button
+                                  size="sm"
+                                  className="w-28"
+                                  variant="outline"
+                                  onClick={() =>
+                                    router.push(`/lend?domain=${domain.name}`)
+                                  }
+                                >
+                                  List for Rent
+                                </Button>
+                              )}
+                              {domain.status === RentalStatus.listed && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-28"
+                                  onClick={() =>
+                                    setUnlistDomain({
+                                      id: domain.id,
+                                      name: domain.name,
+                                    })
+                                  }
+                                >
+                                  Unlist
+                                </Button>
+                              )}
+                              {(domain.status === RentalStatus.rentedOut ||
+                                domain.status === RentalStatus.rentedIn) && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-28"
+                                  onClick={() =>
+                                    router.push(`/manage/${domain.name}`)
+                                  }
+                                >
+                                  View Details
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

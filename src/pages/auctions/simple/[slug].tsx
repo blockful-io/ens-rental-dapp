@@ -19,6 +19,7 @@ import ensRentABI from "@/abis/ensrent.json";
 import { config } from "@/src/wagmi";
 import useDomainData from "@/src/hooks/useDomainData";
 import { useUnlistDomain } from "@/src/hooks/useUnlistDomain";
+import Link from "next/link";
 
 export default function DomainBuy() {
   const router = useRouter();
@@ -273,13 +274,27 @@ export default function DomainBuy() {
 
               {!isSeller ? (
                 isRented ? (
-                  <Alert className="bg-green-50 text-green-700">
-                    <AlertTitle>Success!</AlertTitle>
-                    <AlertDescription>
-                      The domain is now yours until{" "}
-                      {new Date(selectedEndDate).toLocaleDateString()}
-                    </AlertDescription>
-                  </Alert>
+                  <div className="flex flex-col gap-2">
+                    <Alert className="bg-green-50 text-green-700 flex justify-between items-center">
+                      <div>
+                        <AlertTitle>Success!</AlertTitle>
+                        <AlertDescription>
+                          The domain is now yours until{" "}
+                          {new Date(selectedEndDate).toLocaleDateString()}
+                        </AlertDescription>
+                      </div>
+                      <div>
+                        <Button asChild>
+                          <Link
+                            target="_blank"
+                            href={`https://app.ens.domains/${domain}`}
+                          >
+                            Manage your rented domain
+                          </Link>
+                        </Button>
+                      </div>
+                    </Alert>
+                  </div>
                 ) : (
                   <Button
                     size="lg"
