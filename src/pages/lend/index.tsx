@@ -20,7 +20,7 @@ import {
 import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
 import { useRouter } from "next/router";
-import { useAccount } from "wagmi";
+import { useAccount, usePublicClient } from "wagmi";
 import {
   createWalletClient,
   custom,
@@ -31,12 +31,12 @@ import {
   formatEther,
 } from "viem";
 
-import { config } from "@/src/wagmi";
-
 import {
-  ensRentAddress,
+  // ensRentAddress,
+  getEnsRentAddress,
   baseRegistrarAddress,
-  nameWrapperAddress,
+  getNameWrapperAddress,
+  // nameWrapperAddress,
 } from "@/src/wagmi";
 import useDomainsByAddress from "@/src/hooks/useDomains";
 import ensRentABI from "@/abis/ensrent.json";
@@ -56,6 +56,11 @@ export default function Component() {
   const [isApproved, setIsApproved] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
 
+  const publicClient = usePublicClient();
+
+  const ensRentAddress = getEnsRentAddress(publicClient?.chain.id || 1);
+  const nameWrapperAddress = getNameWrapperAddress(publicClient?.chain.id || 1);
+
   const [isListing, setIsListing] = useState(false);
   const [isCheckingApproval, setIsCheckingApproval] = useState(false);
 
@@ -64,11 +69,13 @@ export default function Component() {
     : BigInt(0);
 
   useEffect(() => {
+    if (!publicClient) return;
+
     if (typeof window !== "undefined" && address) {
       const client = createWalletClient({
         account: address,
         transport: custom(window.ethereum),
-        chain: config.chains[0],
+        chain: publicClient.chain,
       }).extend(publicActions);
       setWalletClient(client);
     }

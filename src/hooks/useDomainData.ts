@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
-import { ensRentGraphQL } from "@/src/wagmi";
+import {
+  // ensRentGraphQL,
+  getEnsRentGraphQL,
+} from "@/src/wagmi";
 import { labelhash } from "viem";
 
 import { Domain, RentalStatus } from "@/src/types";
-import { useAccount } from "wagmi";
+import { useAccount, usePublicClient } from "wagmi";
 
 export default function useDomainData(
   domain: string
@@ -13,6 +16,9 @@ export default function useDomainData(
   const [error, setError] = useState<string | null>(null);
   const { address } = useAccount();
 
+  const publicClient = usePublicClient();
+  const ensRentGraphQL = getEnsRentGraphQL(publicClient?.chain.id || 1);
+
   useEffect(() => {
     const fetchListings = async () => {
       setIsLoading(true);
@@ -20,6 +26,7 @@ export default function useDomainData(
       if (!domain) return;
 
       try {
+        if (!ensRentGraphQL) return;
         const response = await fetch(ensRentGraphQL, {
           method: "POST",
           headers: {
@@ -50,7 +57,7 @@ export default function useDomainData(
               }
             `,
             variables: {
-              tokenId: BigInt(labelhash(domain.replace(".eth", ""))).toString()
+              tokenId: BigInt(labelhash(domain.replace(".eth", ""))).toString(),
             },
           }),
         });
@@ -65,25 +72,33 @@ export default function useDomainData(
           throw new Error("Invalid response data");
         }
 
-        const { data: { listing: _listing } } = responseData;
+        const {
+          data: { listing: _listing },
+        } = responseData;
 
         if (!_listing) {
           setError("Listings not found");
-          return
+          return;
         }
 
         const mostRecentRental = _listing.rentals?.items[0];
-        const hasActiveRental = _listing.rentals.items.length > 0 &&
+        const hasActiveRental =
+          _listing.rentals.items.length > 0 &&
           mostRecentRental.endTime &&
           parseInt(mostRecentRental.endTime) > Math.floor(Date.now() / 1000);
 
         const now = Math.floor(Date.now() / 1000); // current time in seconds
-        const rentalExpiry = mostRecentRental?.endTime ? parseInt(mostRecentRental.endTime) : 0;
+        const rentalExpiry = mostRecentRental?.endTime
+          ? parseInt(mostRecentRental.endTime)
+          : 0;
 
         let status = RentalStatus.available;
         if (_listing.lender === address && rentalExpiry > now) {
           status = RentalStatus.rentedOut;
-        } else if (mostRecentRental?.borrower === address && rentalExpiry > now) {
+        } else if (
+          mostRecentRental?.borrower === address &&
+          rentalExpiry > now
+        ) {
           status = RentalStatus.rentedIn;
         } else {
           status = RentalStatus.listed;

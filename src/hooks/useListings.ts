@@ -1,19 +1,34 @@
 import { useState, useEffect } from "react";
-import { ensRentGraphQL } from "@/src/wagmi";
+import {
+  // ensRentGraphQL,
+  getEnsRentGraphQL,
+} from "@/src/wagmi";
 
 import { Domain, RentalStatus } from "@/src/types";
+import { usePublicClient } from "wagmi";
 
-export default function useListings({ lender }: { lender: string }): [Domain[], Domain[], Domain[], boolean] {
+export default function useListings({
+  lender,
+}: {
+  lender: string;
+}): [Domain[], Domain[], Domain[], boolean] {
   const [listings, setListings] = useState<Domain[]>([]);
   const [rentalIns, setRentalIns] = useState<Domain[]>([]);
   const [rentalOuts, setRentalOuts] = useState<Domain[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
 
+  const publicClient = usePublicClient();
+  const ensRentGraphQL = getEnsRentGraphQL(publicClient?.chain.id || 1);
+
+  console.log({ ensRentGraphQL });
+
   useEffect(() => {
     const fetchListings = async () => {
       if (!lender) return;
       setIsLoading(true);
+
+      if (!ensRentGraphQL) return;
 
       const response = await fetch(ensRentGraphQL, {
         method: "POST",
@@ -34,7 +49,9 @@ export default function useListings({ lender }: { lender: string }): [Domain[], 
                     node
                     price
                     tokenId
-                    rentals(where: {endTime_gte: "${Math.floor(Date.now() / 1000)}"}) {
+                    rentals(where: {endTime_gte: "${Math.floor(
+                      Date.now() / 1000
+                    )}"}) {
                       items {
                         borrower
                       }
@@ -72,7 +89,9 @@ export default function useListings({ lender }: { lender: string }): [Domain[], 
                     node
                     price
                     tokenId
-                    rentals(where: {endTime_gte: "${Math.floor(Date.now() / 1000)}"}) {
+                    rentals(where: {endTime_gte: "${Math.floor(
+                      Date.now() / 1000
+                    )}"}) {
                       items {
                         borrower
                         endTime
@@ -84,7 +103,7 @@ export default function useListings({ lender }: { lender: string }): [Domain[], 
               }
             `,
           variables: {
-            lender
+            lender,
           },
         }),
       });
@@ -99,41 +118,53 @@ export default function useListings({ lender }: { lender: string }): [Domain[], 
         throw new Error("Invalid response data");
       }
 
-      setListings(responseData.data.listings.items.filter((l: any) => l.rentals?.items?.length === 0).map((l: Domain) => ({
-        ...l,
-        name: l.name.endsWith(".eth") ? l.name : `${l.name}.eth`,
-        status: RentalStatus.listed,
-      })));
+      setListings(
+        responseData.data.listings.items
+          .filter((l: any) => l.rentals?.items?.length === 0)
+          .map((l: Domain) => ({
+            ...l,
+            name: l.name.endsWith(".eth") ? l.name : `${l.name}.eth`,
+            status: RentalStatus.listed,
+          }))
+      );
 
-      setRentalIns(responseData.data.rentalIns.items.map((rental: any) => ({
-        ...rental.listing,
-        name: rental.listing.name.endsWith(".eth") ? rental.listing.name : `${rental.listing.name}.eth`,
-        status: RentalStatus.rentedIn,
-        rentals: [
-          {
-            borrower: rental.borrower,
-            startTime: rental.startTime,
-            endTime: rental.endTime,
-            price: rental.listing.price,
-          },
-        ],
-      })));
-
-      setRentalOuts(responseData.data.listings.items
-        .filter((listing: any) => listing.rentals?.items?.length > 0)
-        .map((listing: any) => ({
-          ...listing,
-          name: listing.name.endsWith(".eth") ? listing.name : `${listing.name}.eth`,
-          status: RentalStatus.rentedOut,
+      setRentalIns(
+        responseData.data.rentalIns.items.map((rental: any) => ({
+          ...rental.listing,
+          name: rental.listing.name.endsWith(".eth")
+            ? rental.listing.name
+            : `${rental.listing.name}.eth`,
+          status: RentalStatus.rentedIn,
           rentals: [
-            ...listing.rentals.items.map((rental: any) => ({
+            {
               borrower: rental.borrower,
               startTime: rental.startTime,
               endTime: rental.endTime,
-              price: listing.price,
-            })),
+              price: rental.listing.price,
+            },
           ],
-        })));
+        }))
+      );
+
+      setRentalOuts(
+        responseData.data.listings.items
+          .filter((listing: any) => listing.rentals?.items?.length > 0)
+          .map((listing: any) => ({
+            ...listing,
+            name: listing.name.endsWith(".eth")
+              ? listing.name
+              : `${listing.name}.eth`,
+            status: RentalStatus.rentedOut,
+            rentals: [
+              ...listing.rentals.items.map((rental: any) => ({
+                borrower: rental.borrower,
+                startTime: rental.startTime,
+                endTime: rental.endTime,
+                price: listing.price,
+              })),
+            ],
+          }))
+      );
 
       setIsLoading(false);
     };

@@ -11,12 +11,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/src/components/ui/card";
-import { useAccount } from "wagmi";
+import { useAccount, usePublicClient } from "wagmi";
 import { formatEther, labelhash } from "viem";
 import { createWalletClient, custom, publicActions } from "viem";
-import { ensRentAddress } from "@/src/wagmi";
+import {
+  //  ensRentAddress,
+  getEnsRentAddress,
+} from "@/src/wagmi";
 import ensRentABI from "@/abis/ensrent.json";
-import { config } from "@/src/wagmi";
 import useDomainData from "@/src/hooks/useDomainData";
 import { useUnlistDomain } from "@/src/hooks/useUnlistDomain";
 import Link from "next/link";
@@ -42,6 +44,8 @@ export default function DomainBuy() {
   const pricePerSecond = BigInt(listing?.price || 0);
   const pricePerYear = pricePerSecond * BigInt(31536000); // 365 days in seconds
   const totalPrice = pricePerSecond * BigInt(Math.max(0, duration));
+  const publicClient = usePublicClient();
+  const ensRentAddress = getEnsRentAddress(publicClient?.chain.id || 1);
 
   useEffect(() => {
     if (listing && connectedAccount) {
@@ -64,11 +68,13 @@ export default function DomainBuy() {
     if (!listing || !domain || !selectedEndDate || !connectedAccount) return;
 
     try {
+      if (!publicClient) return;
+
       setIsRenting(true);
       const walletClient = createWalletClient({
         account: connectedAccount,
         transport: custom(window.ethereum),
-        chain: config.chains[0],
+        chain: publicClient.chain,
       }).extend(publicActions);
 
       const tokenId = BigInt(labelhash((domain as string).replace(".eth", "")));
@@ -84,7 +90,7 @@ export default function DomainBuy() {
         functionName: "rentDomain",
         args: [tokenId, desiredEndTimestamp],
         value: totalPrice,
-        chain: config.chains[0],
+        chain: publicClient.chain,
         account: connectedAccount,
       });
 
