@@ -88,7 +88,7 @@ export default function Component() {
     setIsCheckingApproval(true);
     try {
       const name = domainToCheck.split(".")[0];
-      const tokenId = BigInt(labelhash(name));
+      const tokenId = BigInt(labelhash(name)).toString();
 
       let owner = (await walletClient.readContract({
         address: baseRegistrarAddress,
@@ -249,9 +249,7 @@ export default function Component() {
         <Card className="mx-auto w-full max-w-md">
           <CardHeader>
             <CardTitle>ENS Domain Rental</CardTitle>
-            <CardDescription>
-              Rent an ENS domain through a Dutch auction
-            </CardDescription>
+            <CardDescription>Rent an ENS domain</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -285,15 +283,21 @@ export default function Component() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="startingPrice">
-                  Starting Price per Year (ETH)
-                </Label>
+                <Label htmlFor="startingPrice">Price per Year (ETH)</Label>
                 <Input
                   id="startingPrice"
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*[.]?[0-9]*"
                   value={startingPrice ?? ""}
+                  min={"0.000000000000000001"}
                   placeholder="0.01"
-                  onChange={(e) => setStartingPrice(Number(e.target.value))}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9.]/g, "");
+                    if (value === "" || !isNaN(parseFloat(value))) {
+                      setStartingPrice(Number(value));
+                    }
+                  }}
                 />
                 {!!startingPrice && (
                   <p className="text-sm text-gray-500 mt-1">
@@ -302,7 +306,7 @@ export default function Component() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="duration">Rental Maximum Duration</Label>
+                <Label htmlFor="duration">Max rental end date</Label>
                 <Input
                   id="endDate"
                   type="date"

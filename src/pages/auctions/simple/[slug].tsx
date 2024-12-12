@@ -222,15 +222,17 @@ export default function DomainBuy() {
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-                  <div className="flex items-center gap-2">
-                    <Tag className="size-5 text-blue-500" />
-                    <span className="text-lg font-medium">Total Price</span>
+                {!isSeller && (
+                  <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+                    <div className="flex items-center gap-2">
+                      <Tag className="size-5 text-blue-500" />
+                      <span className="text-lg font-medium">Total Price</span>
+                    </div>
+                    <span className="text-2xl font-bold">
+                      {formatEther(BigInt(totalPrice))} ETH
+                    </span>
                   </div>
-                  <span className="text-2xl font-bold">
-                    {formatEther(BigInt(totalPrice))} ETH
-                  </span>
-                </div>
+                )}
 
                 <div className="flex items-center justify-between rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
                   <div className="flex items-center gap-2">
