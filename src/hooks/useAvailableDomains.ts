@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  // ensRentGraphQL,
-  getEnsRentGraphQL,
-} from "@/src/wagmi";
+import { getEnsRentGraphQL } from "@/src/wagmi";
 import { Address, formatEther } from "viem";
 import { Domain } from "@/src/types";
 import { usePublicClient } from "wagmi";
@@ -37,6 +34,7 @@ export default function useAvailableDomains(
 
     const fetchAvailableDomains = async () => {
       setIsLoading(true);
+
       try {
         const response = await fetch(ensRentGraphQL!, {
           method: "POST",
@@ -123,7 +121,7 @@ export default function useAvailableDomains(
     };
 
     fetchAvailableDomains();
-  }, []);
+  }, [lender]);
 
   return [domains, isLoading, error];
 }

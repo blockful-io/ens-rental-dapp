@@ -131,16 +131,16 @@ export default function useListings({
       setRentalIns(
         responseData.data.rentalIns.items.map((rental: any) => ({
           ...rental.listing,
-          name: rental.listing.name.endsWith(".eth")
-            ? rental.listing.name
-            : `${rental.listing.name}.eth`,
+          name: rental?.listing?.name.endsWith(".eth")
+            ? rental?.listing?.name
+            : `${rental?.listing?.name}.eth`,
           status: RentalStatus.rentedIn,
           rentals: [
             {
               borrower: rental.borrower,
               startTime: rental.startTime,
               endTime: rental.endTime,
-              price: rental.listing.price,
+              price: rental?.listing?.price,
             },
           ],
         }))
@@ -151,16 +151,16 @@ export default function useListings({
           .filter((listing: any) => listing.rentals?.items?.length > 0)
           .map((listing: any) => ({
             ...listing,
-            name: listing.name.endsWith(".eth")
-              ? listing.name
-              : `${listing.name}.eth`,
+            name: listing?.name?.endsWith(".eth")
+              ? listing?.name
+              : `${listing?.name}.eth`,
             status: RentalStatus.rentedOut,
             rentals: [
-              ...listing.rentals.items.map((rental: any) => ({
-                borrower: rental.borrower,
-                startTime: rental.startTime,
-                endTime: rental.endTime,
-                price: listing.price,
+              ...listing?.rentals?.items.map((rental: any) => ({
+                borrower: rental?.borrower,
+                startTime: rental?.startTime,
+                endTime: rental?.endTime,
+                price: listing?.price,
               })),
             ],
           }))

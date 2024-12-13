@@ -18,10 +18,12 @@ export interface Domain {
   status: RentalStatus;
   hasActiveRental?: boolean;
   rentals?: {
-    id: string;
-    startTime: number;
-    endTime: number;
-    borrower: string;
-    price: number;
-  }[];
+    items: {
+      id: string;
+      startTime: number;
+      endTime: number;
+      borrower: string;
+      price: number;
+    }[];
+  };
 }
