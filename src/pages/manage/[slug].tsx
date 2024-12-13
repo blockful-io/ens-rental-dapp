@@ -38,7 +38,7 @@ export default function RentedDomainDetails() {
     address: rental?.lender as `0x${string}`,
   });
   const { data: borrowerEnsName } = useEnsName({
-    address: rental?.rentals?.[0]?.borrower as `0x${string}`,
+    address: rental?.rentals?.items[0]?.borrower as `0x${string}`,
   });
 
   if (isLoading || !rental) {
@@ -145,16 +145,16 @@ export default function RentedDomainDetails() {
                       <span className="text-gray-500 dark:text-gray-400 mr-1">
                         Start:
                       </span>
-                      {rental.rentals?.length
-                        ? formatDate(rental.rentals[0].startTime)
+                      {rental.rentals?.items.length
+                        ? formatDate(rental.rentals.items[0].startTime)
                         : "-"}
                     </div>
                     <div className="text-sm">
                       <span className="text-gray-500 dark:text-gray-400 mr-1">
                         End:
                       </span>
-                      {rental.rentals?.length
-                        ? formatDate(rental.rentals[0].endTime)
+                      {rental.rentals?.items.length
+                        ? formatDate(rental.rentals.items[0].endTime)
                         : "-"}
                     </div>
                   </div>
@@ -200,7 +200,7 @@ export default function RentedDomainDetails() {
                           </div>
                         ) : (
                           <span className="text-sm">
-                            {rental.rentals![0].borrower}
+                            {rental.rentals?.items[0].borrower}
                           </span>
                         )}
                       </div>
@@ -209,35 +209,6 @@ export default function RentedDomainDetails() {
                 </div>
               </div>
             </div>
-
-            {/* Transaction History */}
-            {/* <div>
-              <h3 className="text-lg font-medium mb-4">Transaction History</h3>
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Event</TableHead>
-                      <TableHead>From</TableHead>
-                      <TableHead>Price</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rental.rentals?.map((rental, index) => (
-                      <TableRow key={index}>
-                        <TableCell>{formatDate(rental.startTime)}</TableCell>
-                        <TableCell>Domain listed</TableCell>
-                        <TableCell>{shortenAddress(rental.borrower)}</TableCell>
-                        <TableCell>
-                          {formatEther(BigInt(rental.price))} ETH
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>  */}
           </CardContent>
           <CardFooter className="flex justify-start gap-2">
             <Button
@@ -247,8 +218,8 @@ export default function RentedDomainDetails() {
                   `${client!.chain!.blockExplorers!.default.url}/tx/${
                     (rental.status === RentalStatus.rentedOut ||
                       rental.status === RentalStatus.rentedIn) &&
-                    rental.rentals?.length
-                      ? rental.rentals![0].id
+                    rental.rentals?.items.length
+                      ? rental.rentals?.items[0].id
                       : rental.id
                   }`,
                   "_blank"
