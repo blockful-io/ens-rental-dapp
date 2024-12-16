@@ -21,8 +21,6 @@ export default function useListings({
   const publicClient = usePublicClient();
   const ensRentGraphQL = getEnsRentGraphQL(publicClient?.chain.id || 1);
 
-  console.log({ ensRentGraphQL });
-
   useEffect(() => {
     const fetchListings = async () => {
       if (!lender) return;
@@ -50,8 +48,8 @@ export default function useListings({
                     price
                     tokenId
                     rentals(where: {endTime_gte: "${Math.floor(
-                      Date.now() / 1000
-                    )}"}) {
+            Date.now() / 1000
+          )}"}) {
                       items {
                         borrower
                       }
@@ -90,8 +88,8 @@ export default function useListings({
                     price
                     tokenId
                     rentals(where: {endTime_gte: "${Math.floor(
-                      Date.now() / 1000
-                    )}"}) {
+            Date.now() / 1000
+          )}"}) {
                       items {
                         borrower
                         endTime

@@ -4,23 +4,10 @@ import { Address, formatEther } from "viem";
 import { Domain } from "@/src/types";
 import { usePublicClient } from "wagmi";
 
-interface AvailableDomain {
-  id: string;
-  maxRentalTime: string;
-  createdAt: string;
-  available: boolean;
-  isWrapped: boolean;
-  lender: string;
-  node: string;
-  name: string;
-  price: string;
-  tokenId: string;
-}
-
 export default function useAvailableDomains(
   lender: Address | undefined
-): [AvailableDomain[], boolean, Error | null] {
-  const [domains, setDomains] = useState<AvailableDomain[]>([]);
+): [Domain[], boolean, Error | null] {
+  const [domains, setDomains] = useState<Domain[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 

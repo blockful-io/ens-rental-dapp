@@ -63,8 +63,6 @@ export default function Component() {
   const [rentedDomains, isLoadingRented, errorRented] =
     useRentedDomains(address);
 
-  console.log("rentedDomains", rentedDomains);
-
   const filteredDomains = availableDomains
     .filter((domain) =>
       domain.name.toLowerCase().includes(searchTerm.toLowerCase())

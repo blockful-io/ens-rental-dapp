@@ -36,8 +36,6 @@ export default function useRentedDomains(
     const fetchAvailableDomains = async () => {
       setIsLoading(true);
 
-      console.log("lender", lender);
-
       try {
         const response = await fetch(ensRentGraphQL!, {
           method: "POST",
