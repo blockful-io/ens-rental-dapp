@@ -306,7 +306,11 @@ export default function DomainBuy() {
                     size="lg"
                     className="w-full"
                     onClick={handleBuy}
-                    disabled={!selectedEndDate || isRenting}
+                    disabled={
+                      selectedEndDate < new Date(Date.now()) ||
+                      isRenting ||
+                      !connectedAccount
+                    }
                   >
                     {isCheckingWallet ? (
                       <span className="flex items-center gap-2">
