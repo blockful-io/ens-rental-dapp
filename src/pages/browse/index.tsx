@@ -94,6 +94,7 @@ export default function Component() {
             <TableHead>Domain Name</TableHead>
             <TableHead>Price per year</TableHead>
             <TableHead>Maximum Rental Time</TableHead>
+            <TableHead>Lender</TableHead>
             <TableHead>Action</TableHead>
           </TableRow>
         </TableHeader>
@@ -113,6 +114,11 @@ export default function Component() {
                   {new Date(
                     Number(domain.maxRentalTime) * 1000
                   ).toLocaleDateString("en-GB")}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center">
+                  <EnsName address={domain.lender as `0x${string}`} />
                 </div>
               </TableCell>
               <TableCell>
@@ -140,6 +146,7 @@ export default function Component() {
             <TableHead>Rental Start</TableHead>
             <TableHead>Rental End</TableHead>
             <TableHead>Borrower</TableHead>
+            <TableHead>Lender</TableHead>
             <TableHead>Action</TableHead>
           </TableRow>
         </TableHeader>
@@ -181,6 +188,11 @@ export default function Component() {
                 <TableCell>
                   <div className="flex items-center">
                     <EnsName address={domain.borrower as `0x${string}`} />
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    <EnsName address={domain.listing.lender as `0x${string}`} />
                   </div>
                 </TableCell>
                 <TableCell>
