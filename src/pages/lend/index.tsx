@@ -42,6 +42,7 @@ import useDomainsByAddress from "@/src/hooks/useDomains";
 import ensRentABI from "@/abis/ensrent.json";
 import baseRegistrarABI from "@/abis/baseRegistrar.json";
 import nameWrapperABI from "@/abis/nameWrapper.json";
+import toast from "react-hot-toast";
 
 export const ONE_YEAR_IN_SECONDS = 31536000;
 
@@ -203,14 +204,19 @@ export default function Component() {
     }
   };
 
-  if (typeof window === "undefined") {
-    return null;
-  }
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!address) {
+        toast.error("Please connect your wallet", {
+          id: "wallet-connect-error",
+        });
+        router.push("/");
+        return null;
+      }
+    }, 500);
 
-  if (!address) {
-    router.push("/");
-    return null;
-  }
+    return () => clearTimeout(timeout);
+  }, [address, router]);
 
   if (error) {
     return (

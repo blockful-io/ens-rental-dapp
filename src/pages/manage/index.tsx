@@ -43,6 +43,7 @@ import useListings from "@/src/hooks/useListings";
 import { useUnlistDomain } from "@/src/hooks/useUnlistDomain";
 import { getStatusColor } from "@/src/utils";
 import Link from "next/link";
+import toast from "react-hot-toast";
 
 export default function RegisteredDomains() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -66,6 +67,19 @@ export default function RegisteredDomains() {
   const [filteredDomains, setFilteredDomains] = useState<Domain[]>([]);
 
   const { unlistDomain: unlistDomainFn, isUnlisting } = useUnlistDomain();
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!address) {
+        toast.error("Please connect your wallet", {
+          id: "wallet-connect-error",
+        });
+        router.push("/");
+      }
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [address, router]);
 
   useEffect(() => {
     async function getDomains() {

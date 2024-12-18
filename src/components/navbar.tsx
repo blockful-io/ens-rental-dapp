@@ -1,8 +1,15 @@
 import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Button } from "@/src/components/ui/button";
+import { useAccount } from "wagmi";
+import toast from "react-hot-toast";
+import { useRouter } from "next/router";
 
 export function SiteHeader() {
+  const { address } = useAccount();
+
+  const router = useRouter();
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background">
       <div className="container flex h-16 items-center space-x-4 sm:justify-between sm:space-x-0 mx-auto">
@@ -15,13 +22,29 @@ export function SiteHeader() {
         <div className="flex flex-1 items-center justify-end space-x-4">
           <nav className="flex items-center space-x-1">
             <Button variant="ghost" asChild>
-              <Link href="/browse">Rent</Link>
+              <Link href={"/browse"}>Rent</Link>
             </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/lend">List</Link>
+            <Button
+              onClick={() => {
+                if (!address) {
+                  toast.error("Please connect your wallet");
+                }
+              }}
+              variant="ghost"
+              asChild
+            >
+              <Link href={address ? "/lend" : router.asPath}>List</Link>
             </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/manage">Manage</Link>
+            <Button
+              onClick={() => {
+                if (!address) {
+                  toast.error("Please connect your wallet");
+                }
+              }}
+              variant="ghost"
+              asChild
+            >
+              <Link href={address ? "/manage" : router.asPath}>Manage</Link>
             </Button>
           </nav>
           {/* <nav className="flex items-center space-x-1">
