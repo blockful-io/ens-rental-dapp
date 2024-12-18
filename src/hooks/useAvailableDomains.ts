@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { getEnsRentGraphQL } from "@/src/wagmi";
 import { Address, formatEther } from "viem";
 import { Domain } from "@/src/types";
-import { usePublicClient } from "wagmi";
-import { mainnet } from "wagmi/chains";
+import { useChainId } from "wagmi";
 
 export default function useAvailableDomains(
   lender: Address | undefined
@@ -12,15 +11,13 @@ export default function useAvailableDomains(
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const publicClient = usePublicClient();
-  // Default to mainnet if no wallet is connected
-  const ensRentGraphQL = getEnsRentGraphQL(
-    publicClient?.chain?.id ?? mainnet.id
-  );
+  const chainId = useChainId();
 
   const oneYearInSeconds = 365 * 24 * 60 * 60;
 
   useEffect(() => {
+    const ensRentGraphQL = getEnsRentGraphQL(chainId);
+
     const fetchAvailableDomains = async () => {
       if (!ensRentGraphQL) {
         setError(new Error("GraphQL endpoint not available"));
@@ -118,7 +115,7 @@ export default function useAvailableDomains(
     };
 
     fetchAvailableDomains();
-  }, [lender, ensRentGraphQL]);
+  }, [lender, chainId]);
 
   return [domains, isLoading, error];
 }
