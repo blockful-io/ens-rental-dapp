@@ -31,8 +31,6 @@ export default function useRentedDomains(
   const ensRentGraphQL = getEnsRentGraphQL(publicClient?.chain.id || 1);
 
   useEffect(() => {
-    if (!lender) return;
-
     const fetchAvailableDomains = async () => {
       setIsLoading(true);
 

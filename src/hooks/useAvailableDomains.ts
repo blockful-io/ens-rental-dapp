@@ -3,6 +3,7 @@ import { getEnsRentGraphQL } from "@/src/wagmi";
 import { Address, formatEther } from "viem";
 import { Domain } from "@/src/types";
 import { usePublicClient } from "wagmi";
+import { mainnet } from "wagmi/chains";
 
 export default function useAvailableDomains(
   lender: Address | undefined
@@ -12,26 +13,36 @@ export default function useAvailableDomains(
   const [error, setError] = useState<Error | null>(null);
 
   const publicClient = usePublicClient();
-  const ensRentGraphQL = getEnsRentGraphQL(publicClient?.chain.id || 1);
+  // Default to mainnet if no wallet is connected
+  const ensRentGraphQL = getEnsRentGraphQL(
+    publicClient?.chain?.id ?? mainnet.id
+  );
 
   const oneYearInSeconds = 365 * 24 * 60 * 60;
 
   useEffect(() => {
-    if (!lender) return;
-
     const fetchAvailableDomains = async () => {
+      if (!ensRentGraphQL) {
+        setError(new Error("GraphQL endpoint not available"));
+        console.error("GraphQL endpoint not available");
+        setIsLoading(false);
+        return;
+      }
+
       setIsLoading(true);
 
       try {
-        const response = await fetch(ensRentGraphQL!, {
+        const response = await fetch(ensRentGraphQL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             query: `
-              query GetListings($lender: String!) {
-                listings(where: {lender_not: $lender}) {
+              query GetListings {
+                listings(where: ${
+                  !!lender ? `{lender_not: "${lender}"}` : "{}"
+                }) {
                   items {
                     rentals {
                       items {
@@ -52,9 +63,6 @@ export default function useAvailableDomains(
                 }
               }
             `,
-            variables: {
-              lender,
-            },
           }),
         });
 
@@ -98,17 +106,19 @@ export default function useAvailableDomains(
             return !lastRentEndTime || lastRentEndTime < Date.now() / 1000;
           });
 
+          setError(null);
           setDomains(filteredDomains);
         }
       } catch (err) {
         setError(new Error("An error occurred fetching available domains"));
+        console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchAvailableDomains();
-  }, [lender]);
+  }, [lender, ensRentGraphQL]);
 
   return [domains, isLoading, error];
 }
