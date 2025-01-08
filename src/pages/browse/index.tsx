@@ -64,6 +64,10 @@ export default function Component() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
+  const [rentedDomains, setRentedDomains] = useState<RentedDomainType[]>([]);
+  const [isLoadingRented, setIsLoadingRented] = useState(false);
+  const [errorRented, setErrorRented] = useState<Error | null>(null);
+
   const [
     getInitialPage,
     getNextPage,
@@ -71,6 +75,14 @@ export default function Component() {
     hasNextPage,
     hasPreviousPage,
   ] = useAvailableDomains(address);
+
+  const [
+    getInitialRentedPage,
+    getNextRentedPage,
+    getPreviousRentedPage,
+    hasNextPageRented,
+    hasPreviousPageRented,
+  ] = useRentedDomains(address);
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -88,6 +100,23 @@ export default function Component() {
 
     loadInitialData();
   }, [searchTerm, sortBy]);
+
+  useEffect(() => {
+    const loadInitialRentedData = async () => {
+      try {
+        setIsLoadingRented(true);
+        const domains = await getInitialRentedPage(searchRented, orderRented);
+        setRentedDomains(domains);
+      } catch (err) {
+        console.log("err", err);
+        setErrorRented(err as Error);
+      } finally {
+        setIsLoadingRented(false);
+      }
+    };
+
+    loadInitialRentedData();
+  }, [searchRented, orderRented]);
 
   const handleNextPage = async () => {
     try {
@@ -113,22 +142,32 @@ export default function Component() {
     }
   };
 
-  const [rentedDomains, isLoadingRented, errorRented] =
-    useRentedDomains(address);
+  const handleNextRentedPage = async () => {
+    try {
+      setIsLoadingRented(true);
+      const domains = await getNextRentedPage(searchRented, orderRented);
+      setRentedDomains(domains);
+    } catch (err) {
+      setErrorRented(err as Error);
+    } finally {
+      setIsLoadingRented(false);
+    }
+  };
+
+  const handlePreviousRentedPage = async () => {
+    try {
+      setIsLoadingRented(true);
+      const domains = await getPreviousRentedPage(searchRented, orderRented);
+      setRentedDomains(domains);
+    } catch (err) {
+      setErrorRented(err as Error);
+    } finally {
+      setIsLoadingRented(false);
+    }
+  };
 
   const filteredDomains = availableDomains;
-
-  const rentedFilteredDomains = rentedDomains
-    .filter((domain: any) =>
-      domain.listing.name.toLowerCase().includes(searchRented.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (orderRented === "price")
-        return Number(b.listing.price) - Number(a.listing.price);
-      if (orderRented === "time")
-        return Number(b.startTime) - Number(a.startTime);
-      return 0;
-    });
+  const rentedFilteredDomains = rentedDomains;
 
   const TableView = () => (
     <div className="flex flex-col gap-4">
@@ -202,81 +241,102 @@ export default function Component() {
   );
 
   const RentedTableView = () => (
-    <div className="rounded-md border overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-white text-black">
-            <TableHead>Domain Name</TableHead>
-            <TableHead>Price per year</TableHead>
-            <TableHead>Rental Start</TableHead>
-            <TableHead>Rental End</TableHead>
-            <TableHead>Borrower</TableHead>
-            <TableHead>Lender</TableHead>
-            <TableHead>Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rentedFilteredDomains.map((domain: RentedDomainType) => {
-            return (
-              <TableRow
-                key={domain.listing.id}
-                className={"bg-gray-100 hover:bg-gray-100"}
-              >
-                <TableCell className="font-medium">
-                  {`${domain.listing.name}.eth`}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <TrendingDown className="w-4 h-4 text-green-500 mr-2" />
-                    {formatEther(
-                      BigInt(domain.listing.price) * BigInt(365 * 24 * 60 * 60)
-                    )}
-                    ETH
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 text-blue-500 mr-2" />
-                    {new Date(
-                      Number(domain.startTime) * 1000
-                    ).toLocaleDateString("en-GB")}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 text-blue-500 mr-2" />
-                    {new Date(Number(domain.endTime) * 1000).toLocaleDateString(
-                      "en-GB"
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <EnsName address={domain.borrower as `0x${string}`} />
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center">
-                    <EnsName address={domain.listing.lender as `0x${string}`} />
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    size="sm"
-                    disabled
-                    onClick={() =>
-                      router.push(`/auctions/simple/${domain.listing.name}`)
-                    }
-                  >
-                    Already Rented
-                  </Button>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
+    <>
+      <div className="rounded-md border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-white text-black">
+              <TableHead>Domain Name</TableHead>
+              <TableHead>Price per year</TableHead>
+              <TableHead>Rental Start</TableHead>
+              <TableHead>Rental End</TableHead>
+              <TableHead>Borrower</TableHead>
+              <TableHead>Lender</TableHead>
+              <TableHead>Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rentedFilteredDomains.map((domain: RentedDomainType) => {
+              return (
+                <TableRow
+                  key={domain.listing.id}
+                  className={"bg-gray-100 hover:bg-gray-100"}
+                >
+                  <TableCell className="font-medium">
+                    {`${domain.listing.name}.eth`}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <TrendingDown className="w-4 h-4 text-green-500 mr-2" />
+                      {formatEther(
+                        BigInt(domain.listing.price) *
+                          BigInt(365 * 24 * 60 * 60)
+                      )}
+                      ETH
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <Clock className="w-4 h-4 text-blue-500 mr-2" />
+                      {new Date(
+                        Number(domain.startTime) * 1000
+                      ).toLocaleDateString("en-GB")}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <Clock className="w-4 h-4 text-blue-500 mr-2" />
+                      {new Date(
+                        Number(domain.endTime) * 1000
+                      ).toLocaleDateString("en-GB")}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <EnsName address={domain.borrower as `0x${string}`} />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <EnsName
+                        address={domain.listing.lender as `0x${string}`}
+                      />
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      disabled
+                      onClick={() =>
+                        router.push(`/auctions/simple/${domain.listing.name}`)
+                      }
+                    >
+                      Already Rented
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex justify-end gap-4 mt-4">
+        <Button
+          variant="outline"
+          onClick={handlePreviousRentedPage}
+          disabled={isLoadingRented || !hasPreviousPageRented}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          onClick={handleNextRentedPage}
+          disabled={isLoadingRented || !hasNextPageRented}
+        >
+          Next
+        </Button>
+      </div>
+    </>
   );
 
   return (
