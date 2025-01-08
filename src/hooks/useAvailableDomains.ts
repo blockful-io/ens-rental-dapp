@@ -6,7 +6,7 @@ import { useChainId } from "wagmi";
 import { useMemo, useState } from "react";
 
 const oneYearInSeconds = 365 * 24 * 60 * 60;
-const pageSize = 3;
+const pageSize = 15;
 const calculateYearlyPrice = (pricePerSecond: string | number): bigint => {
   return BigInt(pricePerSecond || 0) * BigInt(oneYearInSeconds);
 };
@@ -84,6 +84,21 @@ export default function useAvailableDomains(
     }
   };
 
+  const getWhereClause = (param?: string) => {
+    const whereConditions = [];
+    const currentTimestamp = Math.floor(Date.now() / 1000); // Convert to seconds
+
+    // Always add the maxRentalTime condition
+    whereConditions.push(`maxRentalTime_gt: "${currentTimestamp}"`);
+
+    if (lender) whereConditions.push(`lender_not: "${lender}"`);
+    if (param) whereConditions.push(`name_contains: "${param}"`);
+
+    return whereConditions.length
+      ? `where: {${whereConditions.join(", ")}}`
+      : "where: {}";
+  };
+
   const getInitialPage = async (
     param?: string,
     orderBy?: string
@@ -94,14 +109,7 @@ export default function useAvailableDomains(
     setHasNextPageState(false);
     setHasPreviousPageState(false);
 
-    const whereConditions = [];
-    if (lender) whereConditions.push(`lender_not: "${lender}"`);
-    if (param) whereConditions.push(`name_contains: "${param}"`);
-
-    const whereClause = whereConditions.length
-      ? `where: {${whereConditions.join(", ")}}`
-      : "where: {}";
-
+    const whereClause = getWhereClause(param);
     const orderByClause = getOrderByClause(orderBy);
 
     const { data } = await client.query({
@@ -153,15 +161,7 @@ export default function useAvailableDomains(
     orderBy?: string
   ): Promise<Domain[]> => {
     const afterParam = endCursorState ? `, after: "${endCursorState}"` : "";
-    const whereConditions = [];
-
-    if (lender) whereConditions.push(`lender_not: "${lender}"`);
-    if (param) whereConditions.push(`name_contains: "${param}"`);
-
-    const whereClause = whereConditions.length
-      ? `where: {${whereConditions.join(", ")}}`
-      : "where: {}";
-
+    const whereClause = getWhereClause(param);
     const orderByClause = getOrderByClause(orderBy);
 
     const { data } = await client.query({
@@ -216,15 +216,7 @@ export default function useAvailableDomains(
     const beforeParam = startCursorState
       ? `, before: "${startCursorState}"`
       : "";
-    const whereConditions = [];
-
-    if (lender) whereConditions.push(`lender_not: "${lender}"`);
-    if (param) whereConditions.push(`name_contains: "${param}"`);
-
-    const whereClause = whereConditions.length
-      ? `where: {${whereConditions.join(", ")}}`
-      : "where: {}";
-
+    const whereClause = getWhereClause(param);
     const orderByClause = getOrderByClause(orderBy);
 
     const { data } = await client.query({
