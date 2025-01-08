@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import {
@@ -32,6 +32,7 @@ import useRentedDomains, {
 } from "@/src/hooks/useRentedDomains";
 import { formatEther } from "viem";
 import Link from "next/link";
+import { Domain } from "@/src/types";
 
 const EnsName = ({ address }: { address: `0x${string}` }) => {
   const { data: ensName } = useEnsName({ address });
@@ -59,7 +60,55 @@ export default function Component() {
   const router = useRouter();
   const { address } = useAccount();
 
-  const [availableDomains, isLoading, error] = useAvailableDomains(address);
+  const [availableDomains, setAvailableDomains] = useState<Domain[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
+
+  const [getNextPage, getPreviousPage, hasNextPage, hasPreviousPage] =
+    useAvailableDomains(address);
+
+  useEffect(() => {
+    const loadInitialData = async () => {
+      console.log("loadInitialData");
+      try {
+        setIsLoading(true);
+        const domains = await getNextPage();
+        setAvailableDomains(domains as Domain[]);
+      } catch (err) {
+        console.log("err", err);
+        setError(err as Error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadInitialData();
+  }, []);
+
+  const handleNextPage = async () => {
+    try {
+      setIsLoading(true);
+      const domains = await getNextPage();
+      setAvailableDomains(domains);
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePreviousPage = async () => {
+    try {
+      setIsLoading(true);
+      const domains = await getPreviousPage();
+      setAvailableDomains(domains);
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const [rentedDomains, isLoadingRented, errorRented] =
     useRentedDomains(address);
 
@@ -87,52 +136,73 @@ export default function Component() {
     });
 
   const TableView = () => (
-    <div className="rounded-md border overflow-hidden">
-      <Table>
-        <TableHeader>
-          <TableRow className="bg-white text-black">
-            <TableHead>Domain Name</TableHead>
-            <TableHead>Price per year</TableHead>
-            <TableHead>Maximum Rental Time</TableHead>
-            <TableHead>Lender</TableHead>
-            <TableHead>Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredDomains.map((domain) => (
-            <TableRow key={domain.id}>
-              <TableCell className="font-medium">{domain.name}</TableCell>
-              <TableCell>
-                <div className="flex items-center">
-                  <TrendingDown className="w-4 h-4 text-green-500 mr-2" />
-                  {domain.price} ETH
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center">
-                  <Clock className="w-4 h-4 text-blue-500 mr-2" />
-                  {new Date(
-                    Number(domain.maxRentalTime) * 1000
-                  ).toLocaleDateString("en-GB")}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center">
-                  <EnsName address={domain.lender as `0x${string}`} />
-                </div>
-              </TableCell>
-              <TableCell>
-                <Button
-                  size="sm"
-                  onClick={() => router.push(`/auctions/simple/${domain.name}`)}
-                >
-                  Rent Now
-                </Button>
-              </TableCell>
+    <div className="flex flex-col gap-4">
+      <div className="rounded-md border overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-white text-black">
+              <TableHead>Domain Name</TableHead>
+              <TableHead>Price per year</TableHead>
+              <TableHead>Maximum Rental Time</TableHead>
+              <TableHead>Lender</TableHead>
+              <TableHead>Action</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filteredDomains.map((domain) => (
+              <TableRow key={domain.id}>
+                <TableCell className="font-medium">{domain.name}</TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    <TrendingDown className="w-4 h-4 text-green-500 mr-2" />
+                    {domain.price} ETH
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    <Clock className="w-4 h-4 text-blue-500 mr-2" />
+                    {new Date(
+                      Number(domain.maxRentalTime) * 1000
+                    ).toLocaleDateString("en-GB")}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    <EnsName address={domain.lender as `0x${string}`} />
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      router.push(`/auctions/simple/${domain.name}`)
+                    }
+                  >
+                    Rent Now
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex justify-end gap-4 mt-4">
+        <Button
+          variant="outline"
+          onClick={handlePreviousPage}
+          disabled={isLoading || !hasPreviousPage}
+        >
+          Previous
+        </Button>
+        <Button
+          variant="outline"
+          onClick={handleNextPage}
+          disabled={isLoading || !hasNextPage}
+        >
+          Next
+        </Button>
+      </div>
     </div>
   );
 
