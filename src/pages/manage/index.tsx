@@ -346,7 +346,7 @@ export default function RegisteredDomains() {
                             </span>
                           </TableCell>
                           <TableCell className="hidden md:table-cell">
-                            {domain.rentals?.items.length ? (
+                            {domain.rentals?.items?.length ? (
                               <BorrowerCell
                                 borrower={domain.rentals.items[0].borrower}
                               />
