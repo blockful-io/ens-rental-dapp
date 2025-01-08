@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  // ensRentGraphQL,
-  getEnsRentGraphQL,
-} from "@/src/wagmi";
+import { getEnsRentGraphQL } from "@/src/wagmi";
 
 import { Domain, RentalStatus } from "@/src/types";
 import { usePublicClient } from "wagmi";
