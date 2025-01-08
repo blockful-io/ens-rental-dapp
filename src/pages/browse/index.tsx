@@ -64,16 +64,20 @@ export default function Component() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const [getNextPage, getPreviousPage, hasNextPage, hasPreviousPage] =
-    useAvailableDomains(address);
+  const [
+    getInitialPage,
+    getNextPage,
+    getPreviousPage,
+    hasNextPage,
+    hasPreviousPage,
+  ] = useAvailableDomains(address);
 
   useEffect(() => {
     const loadInitialData = async () => {
-      console.log("loadInitialData");
       try {
         setIsLoading(true);
-        const domains = await getNextPage();
-        setAvailableDomains(domains as Domain[]);
+        const domains = await getInitialPage(searchTerm);
+        setAvailableDomains(domains);
       } catch (err) {
         console.log("err", err);
         setError(err as Error);
@@ -83,12 +87,12 @@ export default function Component() {
     };
 
     loadInitialData();
-  }, []);
+  }, [searchTerm]);
 
   const handleNextPage = async () => {
     try {
       setIsLoading(true);
-      const domains = await getNextPage();
+      const domains = await getNextPage(searchTerm);
       setAvailableDomains(domains);
     } catch (err) {
       setError(err as Error);
@@ -100,7 +104,7 @@ export default function Component() {
   const handlePreviousPage = async () => {
     try {
       setIsLoading(true);
-      const domains = await getPreviousPage();
+      const domains = await getPreviousPage(searchTerm);
       setAvailableDomains(domains);
     } catch (err) {
       setError(err as Error);
@@ -112,16 +116,12 @@ export default function Component() {
   const [rentedDomains, isLoadingRented, errorRented] =
     useRentedDomains(address);
 
-  const filteredDomains = availableDomains
-    .filter((domain) =>
-      domain.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a, b) => {
-      if (sortBy === "price") return Number(a.price) - Number(b.price);
-      if (sortBy === "time")
-        return Number(a.maxRentalTime) - Number(b.maxRentalTime);
-      return 0;
-    });
+  const filteredDomains = availableDomains.sort((a, b) => {
+    if (sortBy === "price") return Number(a.price) - Number(b.price);
+    if (sortBy === "time")
+      return Number(a.maxRentalTime) - Number(b.maxRentalTime);
+    return 0;
+  });
 
   const rentedFilteredDomains = rentedDomains
     .filter((domain: any) =>

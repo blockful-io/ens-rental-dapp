@@ -18,7 +18,13 @@ const calculateYearlyPrice = (pricePerSecond: string | number): bigint => {
 
 export default function useAvailableDomains(
   lender: Address | undefined
-): [() => Promise<Domain[]>, () => Promise<Domain[]>, boolean, boolean] {
+): [
+  (param?: string) => Promise<Domain[]>,
+  (param?: string) => Promise<Domain[]>,
+  (param?: string) => Promise<Domain[]>,
+  boolean,
+  boolean
+] {
   const chainId = useChainId();
   const ensRentGraphQL = getEnsRentGraphQL(chainId);
 
@@ -72,15 +78,23 @@ export default function useAvailableDomains(
     return result;
   };
 
-  const getNextPage = async (): Promise<Domain[]> => {
+  const getNextPage = async (param?: string): Promise<Domain[]> => {
     const afterParam = endCursorState ? `, after: "${endCursorState}"` : "";
+    const whereConditions = [];
+
+    if (lender) whereConditions.push(`lender_not: "${lender}"`);
+    if (param) whereConditions.push(`name_contains: "${param}"`);
+
+    const whereClause = whereConditions.length
+      ? `where: {${whereConditions.join(", ")}}`
+      : "where: {}";
 
     const { data } = await client.query({
       query: gql`
         query GetListings {
           listings(
-            limit: ${pageSize},
-            where: ${!!lender ? `{lender_not: "${lender}"}` : "{}"},
+            limit: ${pageSize}
+            ${whereClause}
             ${afterParam}
           ) {
             items {
@@ -119,17 +133,26 @@ export default function useAvailableDomains(
     return formatDomainsData(data);
   };
 
-  const getPreviousPage = async (): Promise<Domain[]> => {
+  const getPreviousPage = async (param?: string): Promise<Domain[]> => {
     const beforeParam = startCursorState
       ? `, before: "${startCursorState}"`
       : "";
+    const whereConditions = [];
+
+    if (lender) whereConditions.push(`lender_not: "${lender}"`);
+    if (param) whereConditions.push(`name_contains: "${param}"`);
+
+    console.log("whereConditions", whereConditions);
+    const whereClause = whereConditions.length
+      ? `where: {${whereConditions.join(", ")}}`
+      : "where: {}";
 
     const { data } = await client.query({
       query: gql`
         query GetListings {
           listings(
-            limit: ${pageSize},
-            where: ${!!lender ? `{lender_not: "${lender}"}` : "{}"},
+            limit: ${pageSize}
+            ${whereClause}
             ${beforeParam}
           ) {
             items {
@@ -168,5 +191,71 @@ export default function useAvailableDomains(
     return formatDomainsData(data);
   };
 
-  return [getNextPage, getPreviousPage, hasNextPageState, hasPreviousPageState];
+  // Reset pagination state and get first page
+  const getInitialPage = async (param?: string): Promise<Domain[]> => {
+    // Reset pagination state
+    setStartCursorState(null);
+    setEndCursorState(null);
+    setHasNextPageState(false);
+    setHasPreviousPageState(false);
+
+    const whereConditions = [];
+
+    if (lender) whereConditions.push(`lender_not: "${lender}"`);
+    if (param) whereConditions.push(`name_contains: "${param}"`);
+
+    const whereClause = whereConditions.length
+      ? `where: {${whereConditions.join(", ")}}`
+      : "where: {}";
+
+    const { data } = await client.query({
+      query: gql`
+        query GetListings {
+          listings(
+            limit: ${pageSize}
+            ${whereClause}
+          ) {
+            items {
+              id
+              maxRentalTime
+              createdAt
+              isWrapped
+              lender
+              node
+              name
+              price
+              tokenId
+              rentals {
+                items {
+                  endTime
+                  borrower
+                }
+              }
+            }
+            pageInfo {
+              startCursor
+              endCursor
+              hasNextPage
+              hasPreviousPage
+            }
+          }
+        }
+      `,
+    });
+
+    setStartCursorState(data.listings.pageInfo.startCursor);
+    setEndCursorState(data.listings.pageInfo.endCursor);
+    setHasNextPageState(data.listings.pageInfo.hasNextPage);
+    setHasPreviousPageState(data.listings.pageInfo.hasPreviousPage);
+
+    return formatDomainsData(data);
+  };
+
+  return [
+    getInitialPage,
+    getNextPage,
+    getPreviousPage,
+    hasNextPageState,
+    hasPreviousPageState,
+  ];
 }
