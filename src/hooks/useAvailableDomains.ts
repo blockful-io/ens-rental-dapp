@@ -36,7 +36,7 @@ export default function useAvailableDomains(
         uri: ensRentGraphQL,
         cache: new InMemoryCache(),
       }),
-    [ensRentGraphQL]
+    [ensRentGraphQL, chainId]
   );
 
   // Move the domain formatting logic to a separate function for reuse

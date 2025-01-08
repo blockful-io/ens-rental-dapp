@@ -61,11 +61,9 @@ export default function useRentedDomains(
   const getWhereClause = (param?: string) => {
     const whereConditions = [];
 
-    if (address) {
-      whereConditions.push(`borrower: "${address}"`);
-    }
     if (param) {
-      whereConditions.push(`listing_: { name_contains: "${param}" }`);
+      // TODO: Replace with listingName_contains when the backend is updated
+      whereConditions.push(`listingId_contains: "${param}"`);
     }
 
     return whereConditions.length
