@@ -1,8 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  // ensRentGraphQL,
-  getEnsRentGraphQL,
-} from "@/src/wagmi";
+import { getEnsRentGraphQL } from "@/src/wagmi";
 
 import { Domain, RentalStatus } from "@/src/types";
 import { usePublicClient } from "wagmi";
@@ -48,8 +45,8 @@ export default function useListings({
                     price
                     tokenId
                     rentals(where: {endTime_gte: "${Math.floor(
-            Date.now() / 1000
-          )}"}) {
+                      Date.now() / 1000
+                    )}"}) {
                       items {
                         borrower
                       }
@@ -88,8 +85,8 @@ export default function useListings({
                     price
                     tokenId
                     rentals(where: {endTime_gte: "${Math.floor(
-            Date.now() / 1000
-          )}"}) {
+                      Date.now() / 1000
+                    )}"}) {
                       items {
                         borrower
                         endTime

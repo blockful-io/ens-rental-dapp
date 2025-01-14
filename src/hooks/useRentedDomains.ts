@@ -1,103 +1,230 @@
-import { useState, useEffect } from "react";
+import { ApolloClient, gql, InMemoryCache } from "@apollo/react-hooks";
 import { getEnsRentGraphQL } from "@/src/wagmi";
 import { Address } from "viem";
-import { usePublicClient } from "wagmi";
+import { useChainId } from "wagmi";
+import { useMemo, useState } from "react";
 
 export type RentedDomainType = {
-  borrower: string;
-  endTime: string;
+  id: string;
   startTime: string;
+  endTime: string;
+  borrower: string;
   listing: {
-    createdAt: string;
     id: string;
-    isWrapped: boolean;
-    lender: string;
-    maxRentalTime: string;
     name: string;
-    node: string;
     price: string;
-    tokenId: string;
+    lender: string;
   };
 };
 
+const pageSize = 15;
+
 export default function useRentedDomains(
-  lender: Address | undefined
-): [RentedDomainType[], boolean, Error | null] {
-  const [domains, setDomains] = useState<RentedDomainType[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  address: Address | undefined
+): [
+  (param?: string, orderBy?: string) => Promise<RentedDomainType[]>,
+  (param?: string, orderBy?: string) => Promise<RentedDomainType[]>,
+  (param?: string, orderBy?: string) => Promise<RentedDomainType[]>,
+  boolean,
+  boolean
+] {
+  const chainId = useChainId();
+  const ensRentGraphQL = getEnsRentGraphQL(chainId);
 
-  const publicClient = usePublicClient();
-  const ensRentGraphQL = getEnsRentGraphQL(publicClient?.chain.id || 1);
+  // Pagination state
+  const [startCursorState, setStartCursorState] = useState<string | null>(null);
+  const [endCursorState, setEndCursorState] = useState<string | null>(null);
+  const [hasNextPageState, setHasNextPageState] = useState<boolean>(false);
+  const [hasPreviousPageState, setHasPreviousPageState] =
+    useState<boolean>(false);
 
-  useEffect(() => {
-    if (!lender) return;
+  const client = useMemo(
+    () =>
+      new ApolloClient({
+        uri: ensRentGraphQL,
+        cache: new InMemoryCache(),
+      }),
+    [ensRentGraphQL]
+  );
 
-    const fetchAvailableDomains = async () => {
-      setIsLoading(true);
+  const getOrderByClause = (orderBy?: string) => {
+    switch (orderBy) {
+      case "price":
+        return 'orderBy: "price", orderDirection: "desc"';
+      case "time":
+        return 'orderBy: "startTime", orderDirection: "desc"';
+      default:
+        return "";
+    }
+  };
 
-      try {
-        const response = await fetch(ensRentGraphQL!, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            query: `
-              query GetListings {
-                rentals(orderBy: "startTime") {
-                  items {
-                    borrower
-                    endTime
-                    startTime
-                    listing {
-                      createdAt
-                      id
-                      isWrapped
-                      lender
-                      maxRentalTime
-                      name
-                      node
-                      price
-                      tokenId
-                    }
-                  }
-                }
+  const getWhereClause = (param?: string) => {
+    const whereConditions = [];
+
+    if (param) {
+      // TODO: Replace with listingName_contains when the backend is updated
+      whereConditions.push(`listingId_contains: "${param}"`);
+    }
+
+    return whereConditions.length
+      ? `where: {${whereConditions.join(", ")}}`
+      : "where: {}";
+  };
+
+  const getInitialPage = async (
+    param?: string,
+    orderBy?: string
+  ): Promise<RentedDomainType[]> => {
+    setStartCursorState(null);
+    setEndCursorState(null);
+    setHasNextPageState(false);
+    setHasPreviousPageState(false);
+
+    const whereClause = getWhereClause(param);
+    const orderByClause = getOrderByClause(orderBy);
+
+    const { data } = await client.query({
+      query: gql`
+        query GetRentals {
+          rentals(
+            limit: ${pageSize}
+            ${whereClause}
+            ${orderByClause}
+          ) {
+            items {
+              id
+              startTime
+              endTime
+              borrower
+              listing {
+                id
+                name
+                price
+                lender
               }
-            `,
-          }),
-        });
-
-        const responseData = await response.json();
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            pageInfo {
+              startCursor
+              endCursor
+              hasNextPage
+              hasPreviousPage
+            }
+          }
         }
+      `,
+    });
 
-        if (responseData.errors) {
-          throw new Error(`GraphQL Error: ${responseData.errors[0].message}`);
+    setStartCursorState(data.rentals.pageInfo.startCursor);
+    setEndCursorState(data.rentals.pageInfo.endCursor);
+    setHasNextPageState(data.rentals.pageInfo.hasNextPage);
+    setHasPreviousPageState(data.rentals.pageInfo.hasPreviousPage);
+
+    return data.rentals.items;
+  };
+
+  const getNextPage = async (
+    param?: string,
+    orderBy?: string
+  ): Promise<RentedDomainType[]> => {
+    const afterParam = endCursorState ? `, after: "${endCursorState}"` : "";
+    const whereClause = getWhereClause(param);
+    const orderByClause = getOrderByClause(orderBy);
+
+    const { data } = await client.query({
+      query: gql`
+        query GetRentals {
+          rentals(
+            limit: ${pageSize}
+            ${whereClause}
+            ${orderByClause}
+            ${afterParam}
+          ) {
+            items {
+              id
+              startTime
+              endTime
+              borrower
+              listing {
+                id
+                name
+                price
+                lender
+              }
+            }
+            pageInfo {
+              startCursor
+              endCursor
+              hasNextPage
+              hasPreviousPage
+            }
+          }
         }
+      `,
+    });
 
-        const { data } = responseData;
+    setStartCursorState(data.rentals.pageInfo.startCursor);
+    setEndCursorState(data.rentals.pageInfo.endCursor);
+    setHasNextPageState(data.rentals.pageInfo.hasNextPage);
+    setHasPreviousPageState(data.rentals.pageInfo.hasPreviousPage);
 
-        if (data?.rentals) {
-          const rentedDomains = data.rentals.items;
+    return data.rentals.items;
+  };
 
-          const filteredDomains = rentedDomains.filter((domain: any) => {
-            return domain.endTime && Number(domain.endTime) > Date.now() / 1000;
-          });
+  const getPreviousPage = async (
+    param?: string,
+    orderBy?: string
+  ): Promise<RentedDomainType[]> => {
+    const beforeParam = startCursorState
+      ? `, before: "${startCursorState}"`
+      : "";
+    const whereClause = getWhereClause(param);
+    const orderByClause = getOrderByClause(orderBy);
 
-          setDomains(filteredDomains);
+    const { data } = await client.query({
+      query: gql`
+        query GetRentals {
+          rentals(
+            limit: ${pageSize}
+            ${whereClause}
+            ${orderByClause}
+            ${beforeParam}
+          ) {
+            items {
+              id
+              startTime
+              endTime
+              borrower
+              listing {
+                id
+                name
+                price
+                lender
+              }
+            }
+            pageInfo {
+              startCursor
+              endCursor
+              hasNextPage
+              hasPreviousPage
+            }
+          }
         }
-      } catch (err) {
-        setError(new Error("An error occurred fetching available domains"));
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      `,
+    });
 
-    fetchAvailableDomains();
-  }, [lender]);
+    setStartCursorState(data.rentals.pageInfo.startCursor);
+    setEndCursorState(data.rentals.pageInfo.endCursor);
+    setHasNextPageState(data.rentals.pageInfo.hasNextPage);
+    setHasPreviousPageState(data.rentals.pageInfo.hasPreviousPage);
 
-  return [domains, isLoading, error];
+    return data.rentals.items;
+  };
+
+  return [
+    getInitialPage,
+    getNextPage,
+    getPreviousPage,
+    hasNextPageState,
+    hasPreviousPageState,
+  ];
 }
